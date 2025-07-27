@@ -1,4 +1,4 @@
-## Spec
+## 「コードを書く前に構造を与える」- Kiroのspec-driven developmentに完全準拠
 
 **「コードを書く前に構造を与える」** - Kiro の spec-driven development に完全準拠
 

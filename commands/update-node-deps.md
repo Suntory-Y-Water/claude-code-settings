@@ -1,4 +1,4 @@
-## Node Dependencies Update
+## Node.jsプロジェクトの依存関係を安全に更新します
 
 Node.js プロジェクトの依存関係を安全に更新します。
 

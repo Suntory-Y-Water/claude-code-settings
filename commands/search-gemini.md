@@ -1,4 +1,4 @@
-## Gemini Web Search
+## Gemini CLIでWeb検索を実行して最新情報を取得します
 
 Gemini CLI で Web 検索を実行して最新情報を取得します。
 
