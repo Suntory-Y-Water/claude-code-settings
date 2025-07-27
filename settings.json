@@ -159,5 +159,7 @@
         ]
       }
     ]
-  }
+  },
+  "enabledMcpjsonServers": ["playwright"],
+  "enableAllProjectMcpServers": true
 }
