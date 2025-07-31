@@ -49,7 +49,9 @@
       "Bash(pnpm exec biome format:*)",
       "Bash(pnpm add:*)",
       "Bash(cat:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "mcp__serena",
+      "mcp__playwright"
     ],
     "deny": [
       "Bash(* | bash)",
