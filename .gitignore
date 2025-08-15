@@ -20,3 +20,5 @@ statsig/
 shell-snapshots/
 projects/
 ide/
+
+*.lock
