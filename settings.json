@@ -167,7 +167,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/scripts/statusline.js"
+    "command": "node ~/.claude/scripts/statusline.js"
   },
   "feedbackSurveyState": {
     "lastShownTime": 1754094978642
