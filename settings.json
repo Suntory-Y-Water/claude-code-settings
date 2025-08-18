@@ -160,6 +160,10 @@
           {
             "type": "command",
             "command": "powershell.exe -Command \"New-BurntToastNotification -Text 'Claude Code', 'タスクが完了しました'\""
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/scripts/hook_stop_words.sh"
           }
         ]
       }
