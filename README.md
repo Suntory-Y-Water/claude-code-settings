@@ -2,6 +2,10 @@
 
 参考にしている記事 : https://wasabeef.jp/blog/claude-code-cookbook
 
+## 注意点
+
+Windows 環境の人は`git config core.autocrlf`を`false`にしてください
+
 # Claude Code Cookbook
 
 Claude Code をもっと便利に使うための設定集です。
