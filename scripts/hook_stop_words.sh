@@ -3,18 +3,19 @@
 # 標準入力からJSONを読み取る
 INPUT=$(cat)
 
-HOOK_STOP_WORDS_PATH="~/.claude/scripts/hook_stop_words_rules.json"
+HOOK_STOP_WORDS_PATH="$HOME/.claude/scripts/hook_stop_words_rules.json"
 
 # トランスクリプトを処理（.jsonl形式に対応）
 TRANSCRIPT_PATH=$(echo "$INPUT" | jq -r '.transcript_path')
 if [ -f "$TRANSCRIPT_PATH" ]; then
     # 最後のアシスタントメッセージのみを取得
-    LAST_MESSAGE=$(tac "$TRANSCRIPT_PATH" | while IFS= read -r line; do
+    LAST_MESSAGE=""
+    while IFS= read -r line; do
         if echo "$line" | jq -e '.type == "assistant"' >/dev/null 2>&1; then
-            echo "$line" | jq -r '.message.content[] | select(.type == "text") | .text'
+            LAST_MESSAGE=$(echo "$line" | jq -r '.message.content[] | select(.type == "text") | .text')
             break
         fi
-    done)
+    done < <(tac "$TRANSCRIPT_PATH")
 
     # hook_stop_words.jsonが存在する場合のみ処理
     if [ -f "$HOOK_STOP_WORDS_PATH" ]; then
