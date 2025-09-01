@@ -136,7 +136,6 @@
     ]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["playwright"],
   "hooks": {
     "PreToolUse": [
       {
@@ -144,11 +143,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/scripts/deny-check.sh"
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/check-ai-commit.sh"
+            "command": "~/.claude/scripts/hook_pre_commands.sh"
           }
         ]
       }
