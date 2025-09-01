@@ -21,4 +21,4 @@ shell-snapshots/
 projects/
 ide/
 
-*.lock
+node_modules/

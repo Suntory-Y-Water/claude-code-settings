@@ -1,0 +1,16 @@
+{
+  "name": "claude-code-settings",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "cc-hooks-ts": "^0.0.6",
+    "pathe": "^2.0.3"
+  }
+}
