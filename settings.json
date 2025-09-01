@@ -137,17 +137,6 @@
   },
   "enableAllProjectMcpServers": true,
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/hook_pre_commands.sh"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "matcher": "",
