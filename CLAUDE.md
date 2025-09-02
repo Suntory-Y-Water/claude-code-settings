@@ -12,3 +12,4 @@
 - Prioritize readability by structuring text visually instead of using emojis
   - Use Markdown formatting, creating paragraphs with `##` or `###`
 - Write text other than headings in the normal font (not bold).
+
