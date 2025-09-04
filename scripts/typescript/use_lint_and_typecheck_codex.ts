@@ -36,7 +36,7 @@ const hook = defineHook({
       });
     }
 
-    return c.nonBlockingError(
+    return c.blockingError(
       `Type check failed (exit ${code}).\n${stderr || stdout}`
     );
   },
