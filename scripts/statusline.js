@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require("fs");
-const path = require("path");
-const readline = require("readline");
+import fs from "fs";
+import path from "path";
+import readline from "readline";
 
 // Constants
 const COMPACTION_THRESHOLD = 200000 * 0.8;
