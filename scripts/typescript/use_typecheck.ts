@@ -31,8 +31,19 @@ function runTypeCheck(): Promise<CmdResult> {
 }
 
 const hook = defineHook({
-  trigger: { Stop: true },
+  trigger: { 
+    PostToolUse: { 
+      Edit: true, 
+      MultiEdit: true 
+    } 
+  },
   run: async (c) => {
+    // TypeScript ファイルの編集でない場合はスキップ
+    const filePath = c.input.tool_input.file_path;
+    if (!filePath?.match(/\.(ts|tsx|cts|mts)$/)) {
+      return c.success();
+    }
+
     const result = await runTypeCheck();
 
     if (result.code === 0) {
@@ -41,12 +52,20 @@ const hook = defineHook({
       });
     }
 
-    // Do not block; surface details to the user.
-    return c.nonBlockingError(
-      `Type check failed (exit ${result.code}). Run 'npx tsc --noEmit' locally.\n${
-        result.stderr || result.stdout
-      }`
-    );
+    // Claude に型エラー修正を指示
+    return c.json({
+      event: "PostToolUse",
+      output: {
+        decision: "block",
+        reason: `TypeScript errors found. Fix the following errors:\n\n${
+          result.stderr || result.stdout
+        }\n\nUse correct types to resolve these errors.`,
+        hookSpecificOutput: {
+          hookEventName: "PostToolUse",
+          additionalContext: `Type check failed. Please fix all TypeScript errors before proceeding.`,
+        },
+      },
+    });
   },
 });
 

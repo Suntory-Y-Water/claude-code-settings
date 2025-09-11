@@ -1,3 +1,13 @@
+/**
+ * TypeScriptファイルでの型アサーションおよび型注釈の使用を制限するフック
+ * 
+ * 以下の構文を含む編集を検出し、拒否する:
+ * - `as any`, `as unknown` (型アサーション)
+ * - `: any`, `: unknown` (型注釈)
+ * 
+ * トリガー: Edit および MultiEdit ツールの実行前
+ */
+
 import { defineHook, runHook } from "cc-hooks-ts";
 import { extname } from "pathe";
 
@@ -11,7 +21,12 @@ type Rule = {
   restrictedSyntax: string[];
 };
 
-const includesRestrictedEdit = (edits: Edit[], rule: Rule) => {
+/**
+ * 編集が制限された構文を含むかチェックする
+ * @param edits - チェック対象の編集配列
+ * @param rule - 制限ルール
+ */
+function includesRestrictedEdit (edits: Edit[], rule: Rule) {
   return edits.some((edit) =>
     rule.restrictedSyntax.some((restrictedEdit) =>
       edit.new_string.includes(restrictedEdit)
@@ -19,7 +34,12 @@ const includesRestrictedEdit = (edits: Edit[], rule: Rule) => {
   );
 };
 
-const isExtension = (path: string, patterns: string[]) => {
+/**
+ * ファイルパスが指定された拡張子パターンと一致するかチェックする
+ * @param path - チェック対象のファイルパス
+ * @param patterns - 拡張子パターンの配列
+ */
+function isExtension(path: string, patterns: string[]) {
   return patterns.includes(extname(path));
 };
 
