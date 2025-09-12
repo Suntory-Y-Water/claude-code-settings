@@ -53,6 +53,8 @@ const hook = defineHook({
     }
 
     // Claude に型エラー修正を指示
+    // 部分的に修正していると必ず型エラーが出るので
+    // すべての処理が終わっている場合に型エラーを直させるようにする
     return c.json({
       event: "PostToolUse",
       output: {
@@ -62,7 +64,9 @@ const hook = defineHook({
         }\n\nUse correct types to resolve these errors.`,
         hookSpecificOutput: {
           hookEventName: "PostToolUse",
-          additionalContext: `Type check failed. Please fix all TypeScript errors before proceeding.`,
+          additionalContext: ["Type checking failed.",
+            "If the code you created or edited is still in progress, you can ignore this error.",
+            "If the work is complete, please fix all TypeScript errors before informing the user that it is finished."].join(" "),
         },
       },
     });
