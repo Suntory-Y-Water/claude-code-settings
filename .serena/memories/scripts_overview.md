@@ -2,11 +2,11 @@
 
 - hook_pre_commands.sh
   - Purpose: PreToolUse approval hook for `Bash` tool invocations. Rejects if command string contains any blocked substrings.
-  - Rules: `scripts/hook_pre_commands_rules.json` (e.g., block `curl`, `wget`).
+  - Rules: `scripts/pre_commands_rules.json` (e.g., block `curl`, `wget`).
   - Dependencies: `jq`, `grep`, `sed`.
   - I/O: Reads hook JSON on stdin; returns JSON with `decision: approve|block`.
 
-- hook_pre_commands_rules.json
+- pre_commands_rules.json
   - Structure: `{ "<ruleName>": { "commands": string[], "message": string } }`.
   - Default: "curl使うな" rule blocks `curl`/`wget` with guidance to use MCP.
 

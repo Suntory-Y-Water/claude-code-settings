@@ -1,77 +1,150 @@
 #!/usr/bin/env -S bun run --silent
+import { spawnSync } from 'bun';
 import { defineHook, runHook } from 'cc-hooks-ts';
-import { spawn } from 'node:child_process';
+import { extname } from 'pathe';
+import { existsSync, readFileSync } from 'node:fs';
+import type { TranscriptEntry } from '../types/claude-output';
 
+/**
+ * TypeScript型チェックコマンド (`tsc --noEmit`) の実行結果を表す型
+ */
 type CmdResult = {
+  /** プロセス終了コード (0: 成功, その他: エラー, null: 実行時エラー) */
   code: number | null;
+  /** 標準出力の内容（通常は空） */
   stdout: string;
+  /** 標準エラー出力の内容（型エラーメッセージなど） */
   stderr: string;
 };
 
-function runTypeCheck(): Promise<CmdResult> {
-  return new Promise((resolve) => {
-    const child = spawn('npx', ['tsc', '--noEmit'], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: process.env,
-    });
-
-    let stdout = '';
-    let stderr = '';
-
-    child.stdout.on('data', (d: Buffer) => (stdout += d.toString()));
-    child.stderr.on('data', (d: Buffer) => (stderr += d.toString()));
-
-    child.on('close', (code: number) => {
-      resolve({ code, stdout, stderr });
-    });
-    child.on('error', (err: Error) => {
-      resolve({ code: 1, stdout, stderr: String(err) });
-    });
+/**
+ * TypeScriptの型チェックを実行する
+ * @returns 型チェックの結果
+ */
+function runTypeCheck(): CmdResult {
+  const proc = spawnSync(['bun', 'tsc', '--noEmit'], {
+    stdout: 'pipe',
+    stderr: 'pipe',
   });
+
+  return {
+    code: proc.exitCode,
+    stdout: proc.stdout.toString(),
+    stderr: proc.stderr.toString(),
+  };
+}
+
+/**
+ * ファイルパスが指定された拡張子パターンと一致するかチェックする
+ * @param path - チェック対象のファイルパス
+ * @param patterns - 拡張子パターンの配列
+ */
+function isTypeScriptFile(path: string, patterns: string[]) {
+  return patterns.includes(extname(path));
+}
+
+/**
+ * transcriptを確認して最新ユーザーメッセージ以降でTypeScriptファイルの編集があったかチェックする
+ * @param transcriptPath - transcriptファイルのパス
+ * @returns TypeScriptファイルの編集があったかどうか
+ */
+function hasTypeScriptEdits(transcriptPath: string): boolean {
+  if (!existsSync(transcriptPath)) {
+    return false;
+  }
+
+  try {
+    const content = readFileSync(transcriptPath, 'utf-8');
+    const lines = content
+      .split('\n')
+      .filter((line) => line.trim())
+      .reverse();
+
+    // 最新のユーザーメッセージのタイムスタンプを見つける
+    let lastUserTimestamp = '';
+    for (const line of lines) {
+      try {
+        const msg: TranscriptEntry = JSON.parse(line);
+        if (
+          msg.type === 'user' &&
+          msg.timestamp &&
+          typeof msg.message?.content === 'string'
+        ) {
+          lastUserTimestamp = msg.timestamp;
+          break;
+        }
+      } catch {
+        // JSONパースエラーを無視
+      }
+    }
+
+    if (!lastUserTimestamp) {
+      return false;
+    }
+
+    // 最新ユーザーメッセージ以降のassistantメッセージでTypeScript編集をチェック
+    for (const line of lines.reverse()) {
+      try {
+        const msg: TranscriptEntry = JSON.parse(line);
+        if (
+          msg.type === 'assistant' &&
+          msg.timestamp &&
+          msg.timestamp > lastUserTimestamp &&
+          msg.message?.content
+        ) {
+          for (const content of msg.message.content) {
+            if (
+              content.type === 'tool_use' &&
+              (content.name === 'Edit' || content.name === 'MultiEdit') &&
+              content.input?.file_path
+            ) {
+              const filePath = content.input.file_path;
+              if (isTypeScriptFile(filePath, ['.ts', '.tsx', '.cts', '.mts'])) {
+                return true;
+              }
+            }
+          }
+        }
+      } catch {
+        // JSONパースエラーを無視
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 const hook = defineHook({
   trigger: {
-    PostToolUse: {
-      Edit: true,
-      MultiEdit: true,
-    },
+    Stop: true,
   },
+
   run: async (c) => {
-    // TypeScript ファイルの編集でない場合はスキップ
-    const filePath = c.input.tool_input.file_path;
-    if (!filePath?.match(/\.(ts|tsx|cts|mts)$/)) {
+    const transcriptPath = c.input.transcript_path;
+
+    // このセッションでTypeScriptファイルの編集がなかった場合はスキップ
+    const hasEdits = hasTypeScriptEdits(transcriptPath);
+
+    if (!hasEdits) {
       return c.success();
     }
 
-    const result = await runTypeCheck();
+    const result = runTypeCheck();
 
     if (result.code === 0) {
       return c.success({
-        messageForUser: 'Type check passed: npx tsc --noEmit',
+        messageForUser: 'Type check passed: tsc --noEmit',
       });
     }
 
-    // Claude に型エラー修正を指示
-    // 部分的に修正していると必ず型エラーが出るので
-    // すべての処理が終わっている場合に型エラーを直させるようにする
-    return c.json({
-      event: 'PostToolUse',
-      output: {
-        decision: 'block',
-        reason: `TypeScript errors found. Fix the following errors:\n\n${
-          result.stderr || result.stdout
-        }\n\nUse correct types to resolve these errors.`,
-        hookSpecificOutput: {
-          hookEventName: 'PostToolUse',
-          additionalContext: [
-            'Type checking failed.',
-            'If the code you created or edited is still in progress, you can ignore this error.',
-            'If the work is complete, please fix all TypeScript errors before informing the user that it is finished.',
-          ].join(' '),
-        },
-      },
-    });
+    // 型エラーが発生した場合、Claudeに修正を指示
+    const errorMessage = `\x1b[31mTypeScript errors found. Fix the following errors:\x1b[0m\n\n${
+      result.stderr || result.stdout
+    }\n\n\x1b[31mUse correct types to resolve these errors.\x1b[0m`;
+
+    return c.blockingError(errorMessage);
   },
 });
 

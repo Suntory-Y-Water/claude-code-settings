@@ -3,6 +3,7 @@ import { defineHook, runHook } from 'cc-hooks-ts';
 import { readFileSync, existsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { TranscriptEntry } from './types/claude-output.js';
 
 // 型定義
 type StopWordsRule = {
@@ -54,7 +55,7 @@ function extractLastAssistantMessage(transcriptPath: string): string {
 
     for (const line of transcriptLines) {
       try {
-        const msg = JSON.parse(line);
+        const msg: TranscriptEntry = JSON.parse(line);
         if (
           msg &&
           typeof msg === 'object' &&
@@ -175,15 +176,15 @@ const stopWordsHook = defineHook({
       if (violation.violated) {
         const contextSnippet = lastAssistantMessage.substring(0, 200);
         const errorMessage = [
-          `❌ エラー: AIの発言に「${violation.keyword}」が含まれています。`,
+          `\x1b[31m❌ エラー: AIの発言に「${violation.keyword}」が含まれています。\x1b[0m`,
           '',
-          `ルール: ${violation.ruleName}`,
-          `メッセージ: ${violation.ruleMessage}`,
+          `\x1b[31mルール: ${violation.ruleName}\x1b[0m`,
+          `\x1b[31mメッセージ: ${violation.ruleMessage}\x1b[0m`,
           '',
-          '検出された文脈:',
+          '\x1b[31m検出された文脈:\x1b[0m',
           `${contextSnippet}${lastAssistantMessage.length > 200 ? '...' : ''}`,
           '',
-          '作業を中止し、ルールに従って計画を見直してください。',
+          '\x1b[31m作業を中止し、ルールに従って計画を見直してください。\x1b[0m',
         ].join('\n');
 
         return context.blockingError(errorMessage);
