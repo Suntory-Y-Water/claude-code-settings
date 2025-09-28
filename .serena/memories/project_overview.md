@@ -8,9 +8,9 @@
 ## Structure
 - `scripts/`: Hook and utility scripts
   - `hook_pre_commands.sh`: PreToolUse hook; blocks disallowed shell commands based on `scripts/hook_pre_commands_rules.json`.
-  - `hook_stop_words.sh`: Inspects latest assistant message in transcript; blocks if prohibited phrases per `scripts/hook_stop_words_rules.json` appear.
+  - `hook_stop_words.sh`: Inspects latest assistant message in transcript; blocks if prohibited phrases per `scripts/stop_words_rules.json` appear.
   - `hook_pre_commands_rules.json`: Rule set; example blocks `curl`/`wget` with message to use MCP.
-  - `hook_stop_words_rules.json`: Rule sets for speculation/alternatives/improvements/additional work/recommendations.
+  - `stop_words_rules.json`: Rule sets for speculation/alternatives/improvements/additional work/recommendations.
   - `statusline.js`: Prints model, cwd, and token usage percent by scanning `~/.claude/projects/<session_id>.jsonl`.
   - `typescript/no_restricted_edit.ts`: `cc-hooks-ts` PreToolUse to deny edits inserting `any`/`unknown` assertions/annotations for TS-family extensions.
   - `typescript/use_lint_and_typecheck.ts`: Placeholder (empty).

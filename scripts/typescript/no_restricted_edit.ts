@@ -1,15 +1,15 @@
 /**
  * TypeScriptファイルでの型アサーションおよび型注釈の使用を制限するフック
- * 
+ *
  * 以下の構文を含む編集を検出し、拒否する:
  * - `as any`, `as unknown` (型アサーション)
  * - `: any`, `: unknown` (型注釈)
- * 
+ *
  * トリガー: Edit および MultiEdit ツールの実行前
  */
 
-import { defineHook, runHook } from "cc-hooks-ts";
-import { extname } from "pathe";
+import { defineHook, runHook } from 'cc-hooks-ts';
+import { extname } from 'pathe';
 
 type Edit = {
   new_string: string;
@@ -26,13 +26,13 @@ type Rule = {
  * @param edits - チェック対象の編集配列
  * @param rule - 制限ルール
  */
-function includesRestrictedEdit (edits: Edit[], rule: Rule) {
+function includesRestrictedEdit(edits: Edit[], rule: Rule) {
   return edits.some((edit) =>
     rule.restrictedSyntax.some((restrictedEdit) =>
-      edit.new_string.includes(restrictedEdit)
-    )
+      edit.new_string.includes(restrictedEdit),
+    ),
   );
-};
+}
 
 /**
  * ファイルパスが指定された拡張子パターンと一致するかチェックする
@@ -41,7 +41,7 @@ function includesRestrictedEdit (edits: Edit[], rule: Rule) {
  */
 function isExtension(path: string, patterns: string[]) {
   return patterns.includes(extname(path));
-};
+}
 
 const hook = defineHook({
   trigger: {
@@ -56,20 +56,20 @@ const hook = defineHook({
 
     if (
       !isExtension(toolInput.file_path, [
-        ".ts",
-        ".cts",
-        ".mts",
-        ".tsx",
-        ".vue",
-        ".svelte",
-        ".astro",
+        '.ts',
+        '.cts',
+        '.mts',
+        '.tsx',
+        '.vue',
+        '.svelte',
+        '.astro',
       ])
     ) {
       return c.success();
     }
 
     const edits =
-      "edits" in toolInput
+      'edits' in toolInput
         ? toolInput.edits
         : [
             {
@@ -83,20 +83,20 @@ const hook = defineHook({
       includesRestrictedEdit(edits, {
         restrictedSyntax: [
           // type assertion
-          "as any",
-          "as unknown",
+          'as any',
+          'as unknown',
           // type annotation
-          ": any",
-          ": unknown",
+          ': any',
+          ': unknown',
         ],
       })
     ) {
       return c.json({
-        event: "PreToolUse",
+        event: 'PreToolUse',
         output: {
           hookSpecificOutput: {
-            hookEventName: "PreToolUse",
-            permissionDecision: "deny",
+            hookEventName: 'PreToolUse',
+            permissionDecision: 'deny',
             permissionDecisionReason:
               "Do not use type assertion or type annotation with 'any' or 'unknown' to suppress type checking. Remove type assertion / annotation and get diagnostics from IDE or tsc, then use correct types.",
           },

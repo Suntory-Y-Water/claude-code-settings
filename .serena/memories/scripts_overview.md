@@ -12,11 +12,11 @@
 
 - hook_stop_words.sh
   - Purpose: Block on prohibited phrases in the latest assistant message from a transcript.
-  - Rules: `scripts/hook_stop_words_rules.json` (speculation/alternatives/improvement/additional work/recommendation).
+  - Rules: `scripts/stop_words_rules.json` (speculation/alternatives/improvement/additional work/recommendation).
   - Dependencies: `jq`, `grep`, `sed`, `tac`.
   - I/O: stdin JSON with `transcript_path`; emits `approve|block` JSON.
 
-- hook_stop_words_rules.json
+- stop_words_rules.json
   - Structure: `{ "<ruleName>": { "keywords": string[], "message": string } }`.
 
 - statusline.js
