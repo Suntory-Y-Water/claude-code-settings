@@ -32,14 +32,15 @@
       "Write(.env*)",
       "Write(**/secrets/**)",
       "Bash(curl:*)",
-      "Bash(wget:*)"
+      "Bash(wget:*)",
+      "WebFetch",
+      "WebSearch"
     ]
   },
   "enabledMcpjsonServers": ["context7", "serena", "deepwiki"],
   "hooks": {
     "Stop": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
