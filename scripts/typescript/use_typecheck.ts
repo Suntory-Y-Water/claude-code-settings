@@ -17,11 +17,13 @@ type CmdResult = {
   stderr: string;
 };
 
+export const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
+
 /**
  * TypeScriptの型チェックを実行する
  * @returns 型チェックの結果
  */
-function runTypeCheck(): CmdResult {
+export function runTypeCheck(): CmdResult {
   const proc = spawnSync(['bun', 'tsc', '--noEmit'], {
     stdout: 'pipe',
     stderr: 'pipe',
@@ -39,7 +41,7 @@ function runTypeCheck(): CmdResult {
  * @param path - チェック対象のファイルパス
  * @param patterns - 拡張子パターンの配列
  */
-function isTypeScriptFile(path: string, patterns: string[]) {
+export function isTypeScriptFile(path: string, patterns: string[]) {
   return patterns.includes(extname(path));
 }
 
@@ -48,7 +50,7 @@ function isTypeScriptFile(path: string, patterns: string[]) {
  * @param transcriptPath - transcriptファイルのパス
  * @returns TypeScriptファイルの編集があったかどうか
  */
-function hasTypeScriptEdits(transcriptPath: string): boolean {
+export function hasTypeScriptEdits(transcriptPath: string): boolean {
   if (!existsSync(transcriptPath)) {
     return false;
   }
@@ -99,7 +101,7 @@ function hasTypeScriptEdits(transcriptPath: string): boolean {
               content.input?.file_path
             ) {
               const filePath = content.input.file_path;
-              if (isTypeScriptFile(filePath, ['.ts', '.tsx', '.cts', '.mts'])) {
+              if (isTypeScriptFile(filePath, TYPE_SCRIPT_EXTENSIONS)) {
                 return true;
               }
             }
@@ -116,7 +118,7 @@ function hasTypeScriptEdits(transcriptPath: string): boolean {
   }
 }
 
-const hook = defineHook({
+export const typecheckHook = defineHook({
   trigger: {
     Stop: true,
   },
@@ -148,4 +150,6 @@ const hook = defineHook({
   },
 });
 
-await runHook(hook);
+if (process.env.NODE_ENV !== 'test') {
+  await runHook(typecheckHook);
+}

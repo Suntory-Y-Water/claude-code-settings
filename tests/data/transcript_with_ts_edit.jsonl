@@ -1,0 +1,2 @@
+{"type":"user","message":{"role":"user","content":"TypeScriptファイルを編集してください"},"uuid":"user-msg-1","timestamp":"2025-09-28T02:36:47.125Z"}
+{"type":"assistant","message":{"id":"msg-1","type":"message","role":"assistant","content":[{"type":"tool_use","id":"tool-1","name":"Edit","input":{"file_path":"/Users/test/example.ts","old_string":"const x = 1","new_string":"const x: number = 1"}}]},"uuid":"assistant-msg-1","timestamp":"2025-09-28T02:36:50.451Z"}
