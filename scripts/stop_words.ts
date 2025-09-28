@@ -57,13 +57,17 @@ function extractLastAssistantMessage(transcriptPath: string): string {
       try {
         const msg: TranscriptEntry = JSON.parse(line);
         if (
-          msg &&
-          typeof msg === 'object' &&
           msg.type === 'assistant' &&
-          msg.message?.content
+          msg.message &&
+          'content' in msg.message &&
+          Array.isArray(msg.message.content)
         ) {
           for (const content of msg.message.content) {
-            if (content.type === 'text' && isNonEmptyString(content.text)) {
+            if (
+              typeof content === 'object' &&
+              content.type === 'text' &&
+              isNonEmptyString(content.text)
+            ) {
               return content.text;
             }
           }

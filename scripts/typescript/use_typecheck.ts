@@ -24,10 +24,7 @@ export const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
  * @returns 型チェックの結果
  */
 export function runTypeCheck(): CmdResult {
-  const proc = spawnSync(['bun', 'tsc', '--noEmit'], {
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
+  const proc = spawnSync(['bun', 'tsc', '--noEmit']);
 
   return {
     code: proc.exitCode,
@@ -63,22 +60,21 @@ export function hasTypeScriptEdits(transcriptPath: string): boolean {
       .reverse();
 
     // 最新のユーザーメッセージのタイムスタンプを見つける
-    let lastUserTimestamp = '';
-    for (const line of lines) {
-      try {
-        const msg: TranscriptEntry = JSON.parse(line);
-        if (
-          msg.type === 'user' &&
-          msg.timestamp &&
-          typeof msg.message?.content === 'string'
-        ) {
-          lastUserTimestamp = msg.timestamp;
-          break;
+    const lastUserTimestamp = (() => {
+      for (const line of lines) {
+        try {
+          const msg: TranscriptEntry = JSON.parse(line);
+          if (
+            msg.type === 'user' &&
+            !msg.message.content.startsWith('Stop hook feedback:')
+          ) {
+            return msg.timestamp;
+          }
+        } catch {
+          // JSONパースエラーを無視
         }
-      } catch {
-        // JSONパースエラーを無視
       }
-    }
+    })();
 
     if (!lastUserTimestamp) {
       return false;
@@ -88,12 +84,7 @@ export function hasTypeScriptEdits(transcriptPath: string): boolean {
     for (const line of lines.reverse()) {
       try {
         const msg: TranscriptEntry = JSON.parse(line);
-        if (
-          msg.type === 'assistant' &&
-          msg.timestamp &&
-          msg.timestamp > lastUserTimestamp &&
-          msg.message?.content
-        ) {
+        if (msg.type === 'assistant' && msg.timestamp > lastUserTimestamp) {
           for (const content of msg.message.content) {
             if (
               content.type === 'tool_use' &&
@@ -142,9 +133,9 @@ export const typecheckHook = defineHook({
     }
 
     // 型エラーが発生した場合、Claudeに修正を指示
-    const errorMessage = `\x1b[31mTypeScript errors found. Fix the following errors:\x1b[0m\n\n${
-      result.stderr || result.stdout
-    }\n\n\x1b[31mUse correct types to resolve these errors.\x1b[0m`;
+    const errorOutput =
+      result.stdout || result.stderr || 'No error output captured';
+    const errorMessage = `\x1b[31mTypeScript errors found. Fix the following errors:\x1b[0m\n\n${errorOutput}\n\n\x1b[31mUse correct types to resolve these errors.\x1b[0m`;
 
     return c.blockingError(errorMessage);
   },

@@ -1,15 +1,52 @@
 /**
  * transcript JSONLファイル内の1行（1つのメッセージエントリ）を表す型
  */
-export type TranscriptEntry = {
-  /** メッセージタイプ ('user': ユーザーメッセージ, 'assistant': AIメッセージ, その他) */
-  type: 'user' | 'assistant' | string;
+export type TranscriptEntry = UserEntry | AssistantEntry | SystemEntry;
+
+/**
+ * ユーザーメッセージ
+ */
+type UserEntry = {
+  /** メッセージタイプ ('user': ユーザーメッセージ) */
+  type: 'user';
   /** ISO8601形式のタイムスタンプ (例: "2025-09-28T01:33:41.977Z") */
-  timestamp?: string;
-  /** AIメッセージの場合のメッセージ内容 */
-  message?: {
+  timestamp: string;
+  /** ユーザーメッセージの内容 */
+  message: {
+    /** メッセージの役割 */
+    role: 'user';
+    /** ユーザーの入力内容（文字列） */
+    content: string;
+  };
+};
+
+/**
+ * アシスタントメッセージ
+ */
+type AssistantEntry = {
+  /** メッセージタイプ ('assistant': AIメッセージ) */
+  type: 'assistant';
+  /** ISO8601形式のタイムスタンプ (例: "2025-09-28T01:33:41.977Z") */
+  timestamp: string;
+  /** アシスタントメッセージの内容 */
+  message: {
     /** メッセージ内のコンテンツ要素配列（テキスト、ツール使用など） */
-    content?: ContentElement[];
+    content: ContentElement[];
+  };
+};
+
+/**
+ * システムメッセージ
+ */
+type SystemEntry = {
+  /** メッセージタイプ ('system') */
+  type: 'system';
+  /** ISO8601形式のタイムスタンプ (例: "2025-09-28T01:33:41.977Z") */
+  timestamp: string;
+  /** システムメッセージの内容 */
+  message?: {
+    /** システムメッセージのコンテンツ */
+    content?: ContentElement[] | string;
   };
 };
 
