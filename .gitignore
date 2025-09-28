@@ -23,3 +23,5 @@ ide/
 
 node_modules/
 history.jsonl
+
+*.local.md
