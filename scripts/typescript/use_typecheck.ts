@@ -88,7 +88,9 @@ export function hasTypeScriptEdits(transcriptPath: string): boolean {
           for (const content of msg.message.content) {
             if (
               content.type === 'tool_use' &&
-              (content.name === 'Edit' || content.name === 'MultiEdit') &&
+              (content.name === 'Edit' ||
+                content.name === 'MultiEdit' ||
+                content.name === 'Write') &&
               content.input?.file_path
             ) {
               const filePath = content.input.file_path;

@@ -1,3 +1,5 @@
+import type { ToolSchema } from 'cc-hooks-ts';
+
 /**
  * transcript JSONLファイル内の1行（1つのメッセージエントリ）を表す型
  */
@@ -53,11 +55,11 @@ type SystemEntry = {
 /**
  * メッセージ内の個別コンテンツ要素（テキストやツール使用）を表す型
  */
-export type ContentElement = {
+type ContentElement = {
   /** コンテンツタイプ ('tool_use': ツール使用, 'text': テキスト, その他) */
   type?: 'tool_use' | 'text' | string;
   /** ツール名 ('Edit': ファイル編集, 'MultiEdit': 複数ファイル編集, その他) */
-  name?: string;
+  name?: keyof ToolSchema;
   /** テキストコンテンツ ('text'タイプの場合) */
   text?: string;
   /** ツール実行時の入力パラメータ */
