@@ -1,6 +1,6 @@
 #!/usr/bin/env -S bun run --silent
 import { spawnSync } from 'bun';
-import { defineHook, runHook } from 'cc-hooks-ts';
+import { defineHook, runHook, type ToolSchema } from 'cc-hooks-ts';
 import { extname } from 'pathe';
 import { existsSync, readFileSync } from 'node:fs';
 import type { TranscriptEntry } from '../types/claude-output';
@@ -40,6 +40,25 @@ export function runTypeCheck(): CmdResult {
  */
 export function isTypeScriptFile(path: string, patterns: string[]) {
   return patterns.includes(extname(path));
+}
+
+/**
+ * ツールがTypeScriptファイル編集対象かどうかを判定する
+ * @param toolName - 使用されたツール名
+ * @returns TypeScriptファイル編集ツールかどうか
+ */
+export function isTypeScriptEditTool(toolName: keyof ToolSchema): boolean {
+  return (
+    toolName === 'Edit' ||
+    toolName === 'MultiEdit' ||
+    toolName === 'Write' ||
+    // Serena関連のツールもTypeScript編集に含める
+    toolName === 'mcp__serena__create_text_file' ||
+    toolName === 'mcp__serena__insert_after_symbol' ||
+    toolName === 'mcp__serena__insert_before_symbol' ||
+    toolName === 'mcp__serena__replace_regex' ||
+    toolName === 'mcp__serena__replace_symbol_body'
+  );
 }
 
 /**
@@ -88,13 +107,16 @@ export function hasTypeScriptEdits(transcriptPath: string): boolean {
           for (const content of msg.message.content) {
             if (
               content.type === 'tool_use' &&
-              (content.name === 'Edit' ||
-                content.name === 'MultiEdit' ||
-                content.name === 'Write') &&
-              content.input?.file_path
+              content.name &&
+              isTypeScriptEditTool(content.name)
             ) {
-              const filePath = content.input.file_path;
-              if (isTypeScriptFile(filePath, TYPE_SCRIPT_EXTENSIONS)) {
+              // file_path または relative_path のいずれかをチェック
+              const filePath =
+                content.input?.file_path || content.input?.relative_path;
+              if (
+                filePath &&
+                isTypeScriptFile(filePath, TYPE_SCRIPT_EXTENSIONS)
+              ) {
                 return true;
               }
             }

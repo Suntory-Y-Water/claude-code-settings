@@ -66,5 +66,37 @@ type ContentElement = {
   input?: {
     /** 編集対象ファイルの絶対パス (例: "/path/to/file.ts") */
     file_path?: string;
+    /** 編集対象ファイルの相対パス (Serena MCPツール用) */
+    relative_path?: string;
   };
 };
+
+declare module 'cc-hooks-ts' {
+  interface ToolSchema {
+    mcp__serena__create_text_file: {
+      input: {
+        relative_path: string;
+      };
+    };
+    mcp__serena__insert_after_symbol: {
+      input: {
+        relative_path: string;
+      };
+    };
+    mcp__serena__insert_before_symbol: {
+      input: {
+        relative_path: string;
+      };
+    };
+    mcp__serena__replace_regex: {
+      input: {
+        relative_path: string;
+      };
+    };
+    mcp__serena__replace_symbol_body: {
+      input: {
+        relative_path: string;
+      };
+    };
+  }
+}
