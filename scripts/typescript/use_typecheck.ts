@@ -53,10 +53,8 @@ export function isTypeScriptEditTool(toolName: keyof ToolSchema): boolean {
     toolName === 'MultiEdit' ||
     toolName === 'Write' ||
     // Serena関連のツールもTypeScript編集に含める
-    toolName === 'mcp__serena__create_text_file' ||
     toolName === 'mcp__serena__insert_after_symbol' ||
     toolName === 'mcp__serena__insert_before_symbol' ||
-    toolName === 'mcp__serena__replace_regex' ||
     toolName === 'mcp__serena__replace_symbol_body'
   );
 }

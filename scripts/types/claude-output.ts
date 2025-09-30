@@ -73,29 +73,25 @@ type ContentElement = {
 
 declare module 'cc-hooks-ts' {
   interface ToolSchema {
-    mcp__serena__create_text_file: {
-      input: {
-        relative_path: string;
-      };
-    };
     mcp__serena__insert_after_symbol: {
       input: {
+        name_path: string;
         relative_path: string;
+        body: string;
       };
     };
     mcp__serena__insert_before_symbol: {
       input: {
+        name_path: string;
         relative_path: string;
-      };
-    };
-    mcp__serena__replace_regex: {
-      input: {
-        relative_path: string;
+        body: string;
       };
     };
     mcp__serena__replace_symbol_body: {
       input: {
+        name_path: string;
         relative_path: string;
+        body: string;
       };
     };
   }
