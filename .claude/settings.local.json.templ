@@ -13,7 +13,8 @@
       "Bash(pnpm typecheck:*)",
       "mcp__chrome-devtools__list_pages",
       "Bash(gh api:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(cat:*)"
     ],
     "deny": [
       "Bash(rm -rf ../*)",
@@ -39,9 +40,21 @@
   },
   "enabledMcpjsonServers": ["context7", "serena", "deepwiki"],
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"When loading TypeScript files, prioritize the following MCPs:\\n\\n1. Serena MCP: use for file editing and loading.\\n2. context7 MCP: use when library type definitions or API specifications are unknown.\\n3. DeepWiki MCP: use when an exception occurs in the library.\"}}'"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
+          // もしかしたら不要
           {
             "type": "command",
             "command": "bun run --silent -i ~/.claude/scripts/stop_words.ts"
