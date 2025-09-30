@@ -71,28 +71,28 @@ type ContentElement = {
   };
 };
 
+/**
+ * Serenaのツール入力パラメータの型
+ */
+type SerenaInput = {
+  /** 編集するシンボル */
+  name_path: string;
+  /** 編集対象ファイルの相対パス */
+  relative_path: string;
+  /** 編集内容 */
+  body: string;
+};
+
 declare module 'cc-hooks-ts' {
   interface ToolSchema {
     mcp__serena__insert_after_symbol: {
-      input: {
-        name_path: string;
-        relative_path: string;
-        body: string;
-      };
+      input: SerenaInput;
     };
     mcp__serena__insert_before_symbol: {
-      input: {
-        name_path: string;
-        relative_path: string;
-        body: string;
-      };
+      input: SerenaInput;
     };
     mcp__serena__replace_symbol_body: {
-      input: {
-        name_path: string;
-        relative_path: string;
-        body: string;
-      };
+      input: SerenaInput;
     };
   }
 }
