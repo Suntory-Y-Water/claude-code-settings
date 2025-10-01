@@ -27,3 +27,6 @@ history.jsonl
 *.local.md
 
 file-history
+
+.claude.json
+.claude.json.*
