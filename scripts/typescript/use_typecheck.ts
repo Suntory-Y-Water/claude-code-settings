@@ -1,5 +1,4 @@
 #!/usr/bin/env -S bun run --silent
-import { spawnSync } from 'bun';
 import { defineHook, runHook, type ToolSchema } from 'cc-hooks-ts';
 import { extname } from 'pathe';
 import { existsSync, readFileSync } from 'node:fs';
@@ -17,14 +16,40 @@ type CmdResult = {
   stderr: string;
 };
 
+/**
+ * Serenaのツール入力パラメータの型
+ */
+type SerenaInput = {
+  /** 編集するシンボル */
+  name_path: string;
+  /** 編集対象ファイルの相対パス */
+  relative_path: string;
+  /** 編集内容 */
+  body: string;
+};
+
+declare module 'cc-hooks-ts' {
+  interface ToolSchema {
+    mcp__serena__insert_after_symbol: {
+      input: SerenaInput;
+    };
+    mcp__serena__insert_before_symbol: {
+      input: SerenaInput;
+    };
+    mcp__serena__replace_symbol_body: {
+      input: SerenaInput;
+    };
+  }
+}
+
 export const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
 
 /**
  * TypeScriptの型チェックを実行する
  * @returns 型チェックの結果
  */
-export function runTypeCheck(): CmdResult {
-  const proc = spawnSync(['bun', 'tsc', '--noEmit']);
+export async function runTypeCheck(): Promise<CmdResult> {
+  const proc = await Bun.$`bun tsc --noEmit`.nothrow().quiet();
 
   return {
     code: proc.exitCode,
@@ -146,7 +171,7 @@ export const typecheckHook = defineHook({
       return c.success();
     }
 
-    const result = runTypeCheck();
+    const result = await runTypeCheck();
 
     if (result.code === 0) {
       return c.success({

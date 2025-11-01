@@ -70,29 +70,3 @@ type ContentElement = {
     relative_path?: string;
   };
 };
-
-/**
- * Serenaのツール入力パラメータの型
- */
-type SerenaInput = {
-  /** 編集するシンボル */
-  name_path: string;
-  /** 編集対象ファイルの相対パス */
-  relative_path: string;
-  /** 編集内容 */
-  body: string;
-};
-
-declare module 'cc-hooks-ts' {
-  interface ToolSchema {
-    mcp__serena__insert_after_symbol: {
-      input: SerenaInput;
-    };
-    mcp__serena__insert_before_symbol: {
-      input: SerenaInput;
-    };
-    mcp__serena__replace_symbol_body: {
-      input: SerenaInput;
-    };
-  }
-}

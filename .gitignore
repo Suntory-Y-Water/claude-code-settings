@@ -32,3 +32,6 @@ file-history
 .claude.json.*
 debug/
 settings.json
+
+plugins/installed_plugins.json
+plugins/known_marketplaces.json
