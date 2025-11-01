@@ -30,3 +30,5 @@ file-history
 
 .claude.json
 .claude.json.*
+debug/
+settings.json
