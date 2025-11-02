@@ -3,6 +3,7 @@ import { defineHook, runHook, type ToolSchema } from 'cc-hooks-ts';
 import { extname } from 'pathe';
 import { existsSync, readFileSync } from 'node:fs';
 import type { TranscriptEntry } from '../types/claude-output';
+import { $ } from 'bun';
 
 /**
  * TypeScript型チェックコマンド (`tsc --noEmit`) の実行結果を表す型
@@ -49,7 +50,7 @@ export const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
  * @returns 型チェックの結果
  */
 export async function runTypeCheck(): Promise<CmdResult> {
-  const proc = await Bun.$`bun tsc --noEmit`.nothrow().quiet();
+  const proc = await $`bun tsc --noEmit`.nothrow().quiet();
 
   return {
     code: proc.exitCode,
