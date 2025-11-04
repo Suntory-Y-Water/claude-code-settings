@@ -3,18 +3,17 @@
   "permissions": {
     "allow": [
       "mcp__serena",
-      "mcp__playwright",
       "mcp__context7",
       "mcp__deepwiki",
-      "Bash(pnpm run:*)",
-      "Bash(scripts/create-new-feature.sh:*)",
-      "Bash(chmod:*)",
-      "mcp__serena__list_dir",
-      "Bash(pnpm typecheck:*)",
-      "mcp__chrome-devtools__list_pages",
+      "Bash(hono:*)",
+      "Bash(bun run build)",
+      "Bash(bun test)",
+      "mcp__ide__getDiagnostics",
+      "Bash(bun run test:*)",
+      "mcp__modular-mcp",
       "Bash(gh api:*)",
-      "Bash(bun run:*)",
-      "Bash(cat:*)"
+      "Bash(AGENT=1 bun test:*)",
+      "Bash(find:*)"
     ],
     "deny": [
       "Bash(rm -rf ../*)",
@@ -36,29 +35,15 @@
       "Bash(wget:*)",
       "WebFetch",
       "WebSearch"
-    ]
-  },
-  "enabledMcpjsonServers": ["context7", "serena", "deepwiki"],
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup|resume|clear|compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "printf '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"When loading TypeScript files, prioritize the following MCPs:\\n\\n1. Serena MCP: use for file editing and loading.\\n2. context7 MCP: use when library type definitions or API specifications are unknown.\\n3. DeepWiki MCP: use when an exception occurs in the library.\"}}'"
-          }
-        ]
-      }
     ],
+    "ask": []
+  },
+  "enabledMcpjsonServers": ["serena"],
+  "enableAllProjectMcpServers": true,
+  "hooks": {
     "Stop": [
       {
         "hooks": [
-          // もしかしたら不要
-          {
-            "type": "command",
-            "command": "bun run --silent -i ~/.claude/scripts/stop_words.ts"
-          },
           {
             "type": "command",
             "command": "bun run --silent -i ~/.claude/scripts/typescript/use_typecheck.ts"

@@ -1,23 +1,25 @@
 #!/usr/bin/env node
 
-import fs from "fs";
-import path from "path";
-import readline from "readline";
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
 
 // Constants
 const COMPACTION_THRESHOLD = 200000 * 0.8;
 
 // Read JSON from stdin
-let input = "";
-process.stdin.on("data", (chunk) => (input += chunk));
-process.stdin.on("end", async () => {
+let input = '';
+process.stdin.on('data', (chunk) => {
+  input += chunk;
+});
+process.stdin.on('end', async () => {
   try {
     const data = JSON.parse(input);
 
     // Extract values
-    const model = data.model?.display_name || "Unknown";
+    const model = data.model?.display_name || 'Unknown';
     const currentDir = path.basename(
-      data.workspace?.current_dir || data.cwd || "."
+      data.workspace?.current_dir || data.cwd || '.',
     );
     const sessionId = data.session_id;
 
@@ -26,7 +28,7 @@ process.stdin.on("end", async () => {
 
     if (sessionId) {
       // Find all transcript files
-      const projectsDir = path.join(process.env.HOME, ".claude", "projects");
+      const projectsDir = path.join(process.env.HOME, '.claude', 'projects');
 
       if (fs.existsSync(projectsDir)) {
         // Get all project directories
@@ -50,24 +52,24 @@ process.stdin.on("end", async () => {
     // Calculate percentage
     const percentage = Math.min(
       100,
-      Math.round((totalTokens / COMPACTION_THRESHOLD) * 100)
+      Math.round((totalTokens / COMPACTION_THRESHOLD) * 100),
     );
 
     // Format token display
     const tokenDisplay = formatTokenCount(totalTokens);
 
     // Color coding for percentage
-    let percentageColor = "\x1b[32m"; // Green
-    if (percentage >= 70) percentageColor = "\x1b[33m"; // Yellow
-    if (percentage >= 90) percentageColor = "\x1b[31m"; // Red
+    let percentageColor = '\x1b[32m'; // Green
+    if (percentage >= 70) percentageColor = '\x1b[33m'; // Yellow
+    if (percentage >= 90) percentageColor = '\x1b[31m'; // Red
 
     // Build status line
     const statusLine = `[${model}] 📁 ${currentDir} | 🪙 ${tokenDisplay} | ${percentageColor}${percentage}%\x1b[0m`;
 
     console.log(statusLine);
-  } catch (error) {
+  } catch {
     // Fallback status line on error
-    console.log("[Error] 📁 . | 🪙 0 | 0%");
+    console.log('[Error] 📁 . | 🪙 0 | 0%');
   }
 });
 
@@ -78,23 +80,23 @@ async function calculateTokensFromTranscript(filePath) {
     const fileStream = fs.createReadStream(filePath);
     const rl = readline.createInterface({
       input: fileStream,
-      crlfDelay: Infinity,
+      crlfDelay: Number.POSITIVE_INFINITY,
     });
 
-    rl.on("line", (line) => {
+    rl.on('line', (line) => {
       try {
         const entry = JSON.parse(line);
 
         // Check if this is an assistant message with usage data
-        if (entry.type === "assistant" && entry.message?.usage) {
+        if (entry.type === 'assistant' && entry.message?.usage) {
           lastUsage = entry.message.usage;
         }
-      } catch (e) {
+      } catch {
         // Skip invalid JSON lines
       }
     });
 
-    rl.on("close", () => {
+    rl.on('close', () => {
       if (lastUsage) {
         // The last usage entry contains cumulative tokens
         const totalTokens =
@@ -108,7 +110,7 @@ async function calculateTokensFromTranscript(filePath) {
       }
     });
 
-    rl.on("error", (err) => {
+    rl.on('error', (err) => {
       reject(err);
     });
   });
@@ -117,7 +119,8 @@ async function calculateTokensFromTranscript(filePath) {
 function formatTokenCount(tokens) {
   if (tokens >= 1000000) {
     return `${(tokens / 1000000).toFixed(1)}M`;
-  } else if (tokens >= 1000) {
+  }
+  if (tokens >= 1000) {
     return `${(tokens / 1000).toFixed(1)}K`;
   }
   return tokens.toString();
