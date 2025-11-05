@@ -36,3 +36,4 @@ settings.json
 plugins/installed_plugins.json
 plugins/known_marketplaces.json
 session-env/
+var
