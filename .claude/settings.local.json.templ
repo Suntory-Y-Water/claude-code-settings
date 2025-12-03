@@ -3,27 +3,52 @@
   "permissions": {
     "allow": [
       "mcp__serena",
+      "mcp__playwright",
       "mcp__context7",
       "mcp__deepwiki",
-      "Bash(hono:*)",
-      "Bash(bun run build)",
-      "Bash(bun test)",
-      "mcp__ide__getDiagnostics",
-      "Bash(bun run test:*)",
-      "mcp__modular-mcp",
+      "mcp__chrome-devtools",
+      "mcp__kiri",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run view:*)",
+      "Bash(git log:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh search issues:*)",
+      "Bash(gh issue view:*)",
+      "Bash(cat:*)",
+      "Bash(chmod:*)",
+      "Bash(bash:*)",
+      "Bash(pnpm run format:check:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm run check:*)",
+      "Bash(pnpm run check:fix:*)",
+      "Bash(pnpm run ai-check:*)",
+      "Bash(pnpm run ci:*)",
+      "Bash(find:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm run check:tags:*)",
+      "Bash(bun:*)",
       "Bash(gh api:*)",
-      "Bash(AGENT=1 bun test:*)",
-      "Bash(find:*)"
+      "Bash(gh label list:*)",
+      "Bash({} ;)",
+      "Bash(gh issue list:*)",
+      "Bash(for:*)",
+      "Bash(do)",
+      "Bash(sed:*)",
+      "Bash(done)",
+      "Bash(gh issue comment:*)",
+      "Bash(xargs curl -s)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebSearch",
+      "Bash(pinact run:*)",
+      "Bash(actionlint:*)",
+      "Bash(ghalint run:*)",
+      "Bash(zizmor:*)",
+      "Bash(pinact --help:*)"
     ],
     "deny": [
-      "Bash(rm -rf ../*)",
-      "Bash(rm -rf /)",
-      "Bash(rm -rf /*)",
-      "Bash(rm -rf ~/*)",
-      "Bash(rm:*)",
-      "Bash(rm -rf:*)",
       "Bash(sudo:*)",
-      "Read(.env.*)",
       "Read(.credentials.*)",
       "Read(id_rsa)",
       "Read(id_ed25519)",
@@ -32,15 +57,33 @@
       "Write(.env*)",
       "Write(**/secrets/**)",
       "Bash(curl:*)",
-      "Bash(wget:*)",
-      "WebFetch",
-      "WebSearch"
+      "Bash(wget:*)"
     ],
-    "ask": []
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(bun add:*)",
+      "Bash(bun remove:*)",
+      "Bash(rm:*)",
+      "Bash(rm -rf:*)"
+    ]
   },
-  "enabledMcpjsonServers": ["serena"],
   "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": ["serena"],
   "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run --silent -i ~/.claude/scripts/typescript/linter/main.ts"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -53,7 +96,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit|MultiEdit",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
