@@ -25,5 +25,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  // Hooks が実際にあるフォルダのみを対象にする
+  "include": ["scripts/"]
 }

@@ -76,7 +76,6 @@ export function isTypeScriptFile(path: string, patterns: string[]) {
 export function isTypeScriptEditTool(toolName: keyof ToolSchema): boolean {
   return (
     toolName === 'Edit' ||
-    toolName === 'MultiEdit' ||
     toolName === 'Write' ||
     // Serena関連のツールもTypeScript編集に含める
     toolName === 'mcp__serena__insert_after_symbol' ||

@@ -14,7 +14,6 @@ import { extname } from 'pathe';
 type Edit = {
   new_string: string;
   old_string: string;
-  replace_all?: boolean;
 };
 
 type Rule = {
@@ -47,7 +46,6 @@ const hook = defineHook({
   trigger: {
     PreToolUse: {
       Edit: true,
-      MultiEdit: true,
     },
   },
 
@@ -68,16 +66,12 @@ const hook = defineHook({
       return c.success();
     }
 
-    const edits =
-      'edits' in toolInput
-        ? toolInput.edits
-        : [
-            {
-              new_string: toolInput.new_string,
-              old_string: toolInput.old_string,
-              replace_all: toolInput.replace_all,
-            },
-          ];
+    const edits: Edit[] = [
+      {
+        new_string: toolInput.new_string,
+        old_string: toolInput.old_string,
+      },
+    ];
 
     if (
       includesRestrictedEdit(edits, {
