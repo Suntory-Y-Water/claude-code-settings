@@ -17,7 +17,11 @@ export function createLintHook(registry: Record<string, RuleFunction>) {
     },
     run: (c) => {
       const filePath = c.input.tool_response.filePath;
-      if (!/\.(ts|tsx|mts|cts)$/.test(filePath)) {
+      // TypeScriptファイル以外、またはテストファイルは対象外
+      if (
+        !/\.(ts|tsx|mts|cts)$/.test(filePath) ||
+        /\.(test|spec)\.(ts|tsx|mts|cts)$/.test(filePath)
+      ) {
         return c.success();
       }
 
@@ -69,7 +73,7 @@ export function createLintHook(registry: Record<string, RuleFunction>) {
 
       if (!sourceFile) return c.success();
 
-      const allErrors: string[] = [];
+      const allErrors: Array<string> = [];
 
       activeRuleNames.forEach((name) => {
         const rule = registry[name];
