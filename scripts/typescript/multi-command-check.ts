@@ -1,8 +1,8 @@
 #!/usr/bin/env -S bun run --silent
 import { defineHook, runHook } from 'cc-hooks-ts';
 import { $ } from 'bun';
-import { parseArgs } from 'util';
-import { hasTypeScriptEdits } from './use-typecheck';
+import { parseArgs } from 'node:util';
+import { hasTypeScriptEdits } from './utils';
 
 /**
  * コマンド実行結果を表す型
@@ -105,7 +105,12 @@ function formatErrorMessage(results: CommandResult[]): string | undefined {
 
   const errorMessages = failures
     .map((f) => {
-      const output = f.stderr || f.stdout || 'No output captured';
+      // stdout と stderr の両方を含めて 型チェック で stderr に出力がある場合でも
+      // 個別の結果を返却させるようにする
+      // 元のコード: const output = f.stderr || f.stdout || 'No output captured';
+      const outputs = [f.stdout, f.stderr].filter(Boolean);
+      const output =
+        outputs.length > 0 ? outputs.join('\n') : 'No output captured';
       return `\x1b[31m❌ Command failed: bun run ${f.command}\x1b[0m\n${output}`;
     })
     .join('\n\n');
@@ -129,6 +134,10 @@ export const multiCommandCheckHook = defineHook({
   },
 
   run: async (c) => {
+    // すでにHookで継続中なら実行しない
+    if (c.input.stop_hook_active) {
+      return c.success();
+    }
     // コマンド引数から -c オプションを取得
     const commandsStr = getCommandsFromArgs();
 

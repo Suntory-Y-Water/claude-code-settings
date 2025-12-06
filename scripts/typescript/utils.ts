@@ -46,20 +46,6 @@ declare module 'cc-hooks-ts' {
 const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
 
 /**
- * TypeScriptの型チェックを実行する
- * @returns 型チェックの結果
- */
-export async function runTypeCheck(): Promise<CmdResult> {
-  const proc = await $`bun tsc --noEmit`.nothrow().quiet();
-
-  return {
-    code: proc.exitCode,
-    stdout: proc.stdout.toString(),
-    stderr: proc.stderr.toString(),
-  };
-}
-
-/**
  * ファイルパスが指定された拡張子パターンと一致するかチェックする
  * @param path - チェック対象のファイルパス
  * @param patterns - 拡張子パターンの配列
@@ -154,40 +140,4 @@ export function hasTypeScriptEdits(transcriptPath: string): boolean {
   } catch {
     return false;
   }
-}
-
-export const typecheckHook = defineHook({
-  trigger: {
-    Stop: true,
-  },
-
-  run: async (c) => {
-    const transcriptPath = c.input.transcript_path;
-
-    // このセッションでTypeScriptファイルの編集がなかった場合はスキップ
-    const hasEdits = hasTypeScriptEdits(transcriptPath);
-
-    if (!hasEdits) {
-      return c.success();
-    }
-
-    const result = await runTypeCheck();
-
-    if (result.code === 0) {
-      return c.success({
-        messageForUser: 'Type check passed: tsc --noEmit',
-      });
-    }
-
-    // 型エラーが発生した場合、Claudeに修正を指示
-    const errorOutput =
-      result.stdout || result.stderr || 'No error output captured';
-    const errorMessage = `\x1b[31mTypeScript errors found. Fix the following errors:\x1b[0m\n\n${errorOutput}\n\n\x1b[31mUse correct types to resolve these errors.\x1b[0m`;
-
-    return c.blockingError(errorMessage);
-  },
-});
-
-if (process.env.NODE_ENV !== 'test') {
-  await runHook(typecheckHook);
 }

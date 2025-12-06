@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   hasTypeScriptEdits,
-  isTypeScriptFile,
-  TYPE_SCRIPT_EXTENSIONS,
-} from '../scripts/typescript/use_typecheck.ts';
+} from '../scripts/typescript/utils.ts';
 
 describe('use_typecheck.ts', () => {
   const testDataDir = './tests/data';
@@ -29,21 +27,6 @@ describe('use_typecheck.ts', () => {
     it('TypeScript以外の編集は検出しない', () => {
       const jsEditPath = `${testDataDir}/transcript_with_js_edit.jsonl`;
       expect(hasTypeScriptEdits(jsEditPath)).toBe(false);
-    });
-
-    it('isTypeScriptFileの拡張子判定', () => {
-      expect(isTypeScriptFile('/path/to/file.ts', TYPE_SCRIPT_EXTENSIONS)).toBe(
-        true,
-      );
-      expect(
-        isTypeScriptFile('/path/to/file.tsx', TYPE_SCRIPT_EXTENSIONS),
-      ).toBe(true);
-      expect(isTypeScriptFile('/path/to/file.js', TYPE_SCRIPT_EXTENSIONS)).toBe(
-        false,
-      );
-      expect(
-        isTypeScriptFile('/path/to/file.json', TYPE_SCRIPT_EXTENSIONS),
-      ).toBe(false);
     });
 
     it('最新ユーザーメッセージより前のTypeScript編集は無視する', () => {
