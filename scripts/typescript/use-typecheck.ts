@@ -43,7 +43,7 @@ declare module 'cc-hooks-ts' {
   }
 }
 
-export const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
+const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
 
 /**
  * TypeScriptの型チェックを実行する
