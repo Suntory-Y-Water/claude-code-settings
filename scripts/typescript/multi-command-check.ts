@@ -1,7 +1,7 @@
 #!/usr/bin/env -S bun run --silent
-import { defineHook, runHook } from 'cc-hooks-ts';
-import { $ } from 'bun';
 import { parseArgs } from 'node:util';
+import { $ } from 'bun';
+import { defineHook, runHook } from 'cc-hooks-ts';
 import { hasTypeScriptEdits } from './utils';
 
 /**
