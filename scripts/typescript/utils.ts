@@ -1,9 +1,8 @@
 #!/usr/bin/env -S bun run --silent
-import { defineHook, runHook, type ToolSchema } from 'cc-hooks-ts';
-import { extname } from 'pathe';
 import { existsSync, readFileSync } from 'node:fs';
+import { type ToolSchema } from 'cc-hooks-ts';
+import { extname } from 'pathe';
 import type { TranscriptEntry } from '../types/claude-output';
-import { $ } from 'bun';
 
 /**
  * TypeScript型チェックコマンド (`tsc --noEmit`) の実行結果を表す型
@@ -43,7 +42,7 @@ declare module 'cc-hooks-ts' {
   }
 }
 
-const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts'];
+const TYPE_SCRIPT_EXTENSIONS = ['.ts', '.tsx', '.cts', '.mts', '.astro'];
 
 /**
  * ファイルパスが指定された拡張子パターンと一致するかチェックする
