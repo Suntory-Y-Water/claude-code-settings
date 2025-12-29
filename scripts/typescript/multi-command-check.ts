@@ -44,9 +44,13 @@ function parseCommands(commandsStr: string): string[] {
     .split(',')
     .map((cmd) => cmd.trim())
     .filter((cmd) => {
-      if (cmd.length === 0) return false;
+      if (cmd.length === 0) {
+        return false;
+      }
       // 危険な文字を含むコマンドを拒否
-      if (/[\s;|&$`<>()]/.test(cmd)) return false;
+      if (/[\s;|&$`<>()]/.test(cmd)) {
+        return false;
+      }
       return true;
     });
 }

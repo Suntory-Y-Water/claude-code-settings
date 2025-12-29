@@ -1,20 +1,8 @@
 #!/usr/bin/env -S bun run --silent
 import { existsSync, readFileSync } from 'node:fs';
-import { type ToolSchema } from 'cc-hooks-ts';
+import type { ToolSchema } from 'cc-hooks-ts';
 import { extname } from 'pathe';
 import type { TranscriptEntry } from '../types/claude-output';
-
-/**
- * TypeScript型チェックコマンド (`tsc --noEmit`) の実行結果を表す型
- */
-type CmdResult = {
-  /** プロセス終了コード (0: 成功, その他: エラー, null: 実行時エラー) */
-  code: number | null;
-  /** 標準出力の内容（通常は空） */
-  stdout: string;
-  /** 標準エラー出力の内容（型エラーメッセージなど） */
-  stderr: string;
-};
 
 /**
  * Serenaのツール入力パラメータの型
@@ -29,6 +17,7 @@ type SerenaInput = {
 };
 
 declare module 'cc-hooks-ts' {
+  // biome-ignore lint/style/useConsistentTypeDefinitions: 型拡張のため
   interface ToolSchema {
     mcp__serena__insert_after_symbol: {
       input: SerenaInput;

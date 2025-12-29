@@ -1,5 +1,5 @@
 import { Node } from 'ts-morph';
-import { type RuleFunction } from '../types';
+import type { RuleFunction } from '../types';
 
 /**
  * as型アサーションを禁止するルール（テストファイルは除外）

@@ -38,3 +38,5 @@ plugins/known_marketplaces.json
 session-env/
 var
 plans/
+plugins/install-counts-cache.json
+stats-cache.json

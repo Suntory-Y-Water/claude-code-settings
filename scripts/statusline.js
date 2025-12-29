@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import fs from 'fs';
-import path from 'path';
-import readline from 'readline';
+import fs from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
 
 // Constants
 const COMPACTION_THRESHOLD = 200000 * 0.8;
@@ -60,8 +60,12 @@ process.stdin.on('end', async () => {
 
     // Color coding for percentage
     let percentageColor = '\x1b[32m'; // Green
-    if (percentage >= 70) percentageColor = '\x1b[33m'; // Yellow
-    if (percentage >= 90) percentageColor = '\x1b[31m'; // Red
+    if (percentage >= 70) {
+      percentageColor = '\x1b[33m'; // Yellow
+    }
+    if (percentage >= 90) {
+      percentageColor = '\x1b[31m'; // Red
+    }
 
     // Build status line
     const statusLine = `[${model}] 📁 ${currentDir} | 🪙 ${tokenDisplay} | ${percentageColor}${percentage}%\x1b[0m`;

@@ -58,7 +58,7 @@
         "noUnnecessaryConditions": "error"
       }
     },
-    "includes": ["src/**/*.{js,jsx,ts,tsx}"]
+    "includes": ["scripts/**/*.{js,jsx,ts,tsx}"]
   },
   "javascript": {
     "formatter": {

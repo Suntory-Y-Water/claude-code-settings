@@ -1,9 +1,9 @@
-import { defineHook } from 'cc-hooks-ts';
-import { Project } from 'ts-morph';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { defineHook } from 'cc-hooks-ts';
+import { Project } from 'ts-morph';
 import * as v from 'valibot';
-import { type RuleFunction } from './types';
+import type { RuleFunction } from './types';
 
 const configSchema = v.object({
   rules: v.record(v.string(), v.union([v.literal('error'), v.literal('off')])),
@@ -37,7 +37,9 @@ export function createLintHook(registry: Record<string, RuleFunction>) {
 
       // 設定ファイルがあれば読み込む、なければ空の設定とする
       const config = (() => {
-        if (!fs.existsSync(configPath)) return null;
+        if (!fs.existsSync(configPath)) {
+          return null;
+        }
         try {
           const rawJson = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
           return v.parse(configSchema, rawJson);
@@ -52,7 +54,9 @@ export function createLintHook(registry: Record<string, RuleFunction>) {
 
       // 設定ファイルで "off" になっているものだけを除外する
       const activeRuleNames = allRuleNames.filter((name) => {
-        if (!config) return true; // 設定なしなら全部ON
+        if (!config) {
+          return true; // 設定なしなら全部ON
+        }
         const setting = config.rules[name];
         return setting !== 'off'; // "off" 以外なら実行
       });
@@ -71,9 +75,11 @@ export function createLintHook(registry: Record<string, RuleFunction>) {
         }
       })();
 
-      if (!sourceFile) return c.success();
+      if (!sourceFile) {
+        return c.success();
+      }
 
-      const allErrors: Array<string> = [];
+      const allErrors: string[] = [];
 
       activeRuleNames.forEach((name) => {
         const rule = registry[name];

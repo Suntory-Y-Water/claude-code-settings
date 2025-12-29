@@ -1,5 +1,5 @@
 import { Node } from 'ts-morph';
-import { type RuleFunction } from '../types';
+import type { RuleFunction } from '../types';
 
 /**
  * Topレベルのアロー関数を禁止して、function宣言を使用するように促すルール

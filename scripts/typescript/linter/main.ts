@@ -1,7 +1,7 @@
 #!/usr/bin/env -S bun run --silent
 import { runHook } from 'cc-hooks-ts';
-import { ruleRegistry } from './rules';
 import { createLintHook } from './factory';
+import { ruleRegistry } from './rules';
 
 const hook = createLintHook(ruleRegistry);
 
