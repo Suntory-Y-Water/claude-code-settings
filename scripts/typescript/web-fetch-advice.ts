@@ -50,7 +50,7 @@ const hook = defineHook({
 
     // use markdown fetch instead of WebFetch
     const resposne = await fetch(c.input.tool_input.url);
-    const html = await resposne.text();
+    let html = await resposne.text();
     if (!resposne.ok) {
       // if not 200, we don't process the HTML
       return c.success();
@@ -65,8 +65,20 @@ const hook = defineHook({
       return c.success();
     }
 
-    const content = extract(html);
-    const markdown = toMarkdown(content.root);
+    let content = extract(html);
+    let markdown = toMarkdown(content.root);
+    // 静的ページでもたまに空のマークダウンが出力されることがある
+    // その場合はPlaywrightで動的にHTMLを取得する
+    if (markdown.length === 0) {
+      const { fetchDynamicHtml } = await import('../utils/playwright');
+      html = await fetchDynamicHtml(c.input.tool_input.url);
+      content = extract(html);
+      markdown = toMarkdown(content.root);
+      // Playwrightでも取得できない場合は通常のWebFetchを使う
+      if (markdown.length === 0) {
+        return c.success();
+      }
+    }
 
     return c.json({
       event: 'PreToolUse',
