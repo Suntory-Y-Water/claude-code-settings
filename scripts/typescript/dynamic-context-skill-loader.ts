@@ -19,12 +19,9 @@ const SkillsConfigSchema = v.object({
 type SkillsConfig = v.InferOutput<typeof SkillsConfigSchema>;
 
 /**
- * プロジェクトのスキル設定をロードします。
- * .claude/dynamic-context-skill-loader/context-skills.yml または .claude/dynamic-context-skill-loader/context-skills.yaml を探索して読み込みます。
+ * プロジェクトのスキル設定をロードする
  */
-export async function loadSkillsConfig(
-  cwd: string,
-): Promise<SkillsConfig | null> {
+async function loadSkillsConfig(cwd: string): Promise<SkillsConfig | null> {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || cwd;
   const possiblePaths = [
     path.join(
@@ -64,16 +61,16 @@ export async function loadSkillsConfig(
 }
 
 /**
- * 文字列を正規化（小文字化）します。
+ * 文字列を正規化（小文字化）する
  */
-export function normalize(text: string): string {
+function normalize(text: string): string {
   return text.toLowerCase();
 }
 
 /**
- * プロンプトがスキルのトリガー条件に一致するか判定します。
+ * プロンプトがスキルのトリガー条件に一致するか判定する
  */
-export function matchesSkill(
+function matchesSkill(
   prompt: string,
   skill: v.InferOutput<typeof SkillSchema>,
 ): boolean {

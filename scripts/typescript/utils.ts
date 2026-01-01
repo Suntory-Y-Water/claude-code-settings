@@ -17,7 +17,6 @@ type SerenaInput = {
 };
 
 declare module 'cc-hooks-ts' {
-  // biome-ignore lint/style/useConsistentTypeDefinitions: 型拡張のため
   interface ToolSchema {
     mcp__serena__insert_after_symbol: {
       input: SerenaInput;
