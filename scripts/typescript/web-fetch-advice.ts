@@ -49,14 +49,14 @@ const hook = defineHook({
     }
 
     // use markdown fetch instead of WebFetch
-    const resposne = await fetch(c.input.tool_input.url);
-    let html = await resposne.text();
-    if (!resposne.ok) {
+    const response = await fetch(c.input.tool_input.url);
+    let html = await response.text();
+    if (!response.ok) {
       // if not 200, we don't process the HTML
       return c.success();
     }
     if (
-      resposne.headers
+      response.headers
         .get('Content-Type')
         ?.toLowerCase()
         .includes('text/plain') === true
@@ -66,14 +66,14 @@ const hook = defineHook({
     }
 
     let content = extract(html);
-    let markdown = toMarkdown(content.root);
+    let markdown = decodeURIComponent(toMarkdown(content.root));
     // 静的ページでもたまに空のマークダウンが出力されることがある
     // その場合はPlaywrightで動的にHTMLを取得する
     if (markdown.length === 0) {
       const { fetchDynamicHtml } = await import('../utils/playwright');
       html = await fetchDynamicHtml(c.input.tool_input.url);
       content = extract(html);
-      markdown = toMarkdown(content.root);
+      markdown = decodeURIComponent(toMarkdown(content.root));
       // Playwrightでも取得できない場合は通常のWebFetchを使う
       if (markdown.length === 0) {
         return c.success();
