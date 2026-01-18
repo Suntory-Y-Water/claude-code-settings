@@ -66,18 +66,25 @@ const hook = defineHook({
     }
 
     let content = extract(html);
-    let markdown = decodeURIComponent(toMarkdown(content.root));
+    let markdown = toMarkdown(content.root);
     // 静的ページでもたまに空のマークダウンが出力されることがある
     // その場合はPlaywrightで動的にHTMLを取得する
     if (markdown.length === 0) {
       const { fetchDynamicHtml } = await import('../utils/playwright');
       html = await fetchDynamicHtml(c.input.tool_input.url);
       content = extract(html);
-      markdown = decodeURIComponent(toMarkdown(content.root));
+      markdown = toMarkdown(content.root);
       // Playwrightでも取得できない場合は通常のWebFetchを使う
       if (markdown.length === 0) {
         return c.success();
       }
+    }
+
+    // Markdownの行数が多すぎる場合は通常のWebFetchを使う
+    const MAX_MARKDOWN_LINES = 500;
+    const lineCount = markdown.split('\n').length;
+    if (lineCount > MAX_MARKDOWN_LINES) {
+      return c.success();
     }
 
     return c.json({
