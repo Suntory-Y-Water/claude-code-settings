@@ -41,3 +41,6 @@ var
 plans/
 plugins/install-counts-cache.json
 stats-cache.json
+
+# Obsidian sync logs
+logs/
