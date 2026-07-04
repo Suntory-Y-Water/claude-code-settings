@@ -8,13 +8,19 @@
     "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL": "1",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
-    "CLAUDE_CODE_ARTIFACT_AUTO_OPEN": "0",
-    "CLAUDE_CODE_DISABLE_ARTIFACT": "1"
+    "CLAUDE_AFK_TIMEOUT_MS": "86400000"
   },
   "permissions": {
+    "deny": [
+      "Bash(git config --global credential.*)",
+      "Bash(gh auth setup-git)",
+      "Bash(rm -rf)"
+    ],
     "defaultMode": "auto"
   },
+  "disableClaudeAiConnectors": true,
   "skillOverrides": {
+    "dataviz": "off",
     "claude-api": "off",
     "deep-research": "off",
     "schedule": "off",
@@ -24,7 +30,8 @@
     "keybindings-help": "off",
     "fewer-permission-prompts": "off",
     "init": "off",
-    "claude-in-chrome" : "off"
+    "claude-in-chrome": "off",
+    "update-config": "off"
   },
   "hooks": {
     "SessionStart": [
@@ -45,6 +52,10 @@
           {
             "type": "command",
             "command": "bun run -i --silent ~/.claude/scripts/typescript/create-plan-link.ts"
+          },
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/active-plan-pointer.ts"
           }
         ]
       },
@@ -89,6 +100,35 @@
           }
         ]
       }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/compaction-recovery.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/userpromptsubmit-compaction-recovery.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/userpromptsubmit-compact-prep-reminder.sh"
+          }
+        ]
+      }
     ]
   },
   "disableWorkflows": true,
@@ -96,15 +136,10 @@
     "type": "command",
     "command": "~/.claude/scripts/statusline.py"
   },
-  "extraKnownMarketplaces": {
-    "suntory-n-water-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "Suntory-N-Water/suntory-n-water-marketplace"
-      }
-    }
-  },
   "language": "日本語",
+  "spinnerTipsEnabled": false,
+  "leftArrowOpensAgents": false,
+  "workflowKeywordTriggerEnabled" : false,
   "effortLevel": "high",
   "awaySummaryEnabled": false,
   "showClearContextOnPlanAccept": true,
@@ -113,11 +148,10 @@
   "autoCompactEnabled": true,
   "remoteControlAtStartup": false,
   "skipAutoPermissionPrompt": true,
+  "useAutoModeDuringPlan": true,
   "autoMode": {
     "environment": [
       "$defaults"
     ]
-  },
-  "spinnerTipsEnabled" : false,
-  "useAutoModeDuringPlan": true
+  }
 }
