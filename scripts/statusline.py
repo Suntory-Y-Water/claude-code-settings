@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """Pattern 4: Fine-grained progress bar with true color gradient"""
 
-import json, subprocess, sys, os, time, datetime, urllib.request, urllib.error
+import datetime
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8")
@@ -142,6 +149,46 @@ def fetch_usage():
     return cache_data
 
 
+# 1M context (Opus 1M beta 等) では発火点(90〜95%)までの絶対トークン余白が
+# 大きいため 60% で警告して余裕を持たせる。200K 相当の通常 context では
+# 60% だとまだ余裕がありすぎて通知が早すぎるため、80% まで引き上げる。
+COMPACT_WARN_THRESHOLD_LARGE_WINDOW = 60
+COMPACT_WARN_THRESHOLD_DEFAULT = 80
+LARGE_WINDOW_SIZE = 700_000
+
+
+def compact_warn_threshold(context_window_size):
+    if context_window_size and context_window_size >= LARGE_WINDOW_SIZE:
+        return COMPACT_WARN_THRESHOLD_LARGE_WINDOW
+    return COMPACT_WARN_THRESHOLD_DEFAULT
+
+
+def maybe_write_compact_warn_marker(session_id, used_percentage, context_window_size):
+    """閾値超過時、compact-prep 提案を促す warn marker を書く(cooldown 中は skip)。
+
+    UserPromptSubmit hook (userpromptsubmit-compact-prep-reminder.sh) がこの
+    marker を読んで additionalContext を注入し、cooldown marker に置き換える。
+    """
+    if not session_id:
+        return
+    threshold = compact_warn_threshold(context_window_size)
+    if int(round(used_percentage)) < threshold:
+        return
+
+    tmp_root = os.environ.get("TMPDIR") or "/tmp"
+    warned_marker = os.path.join(tmp_root, "claude-compact-warned", session_id)
+    if os.path.exists(warned_marker):
+        return  # cooldown 中(既に通知済みで compact/reset 待ち)
+
+    warn_dir = os.path.join(tmp_root, "claude-compact-warn")
+    try:
+        os.makedirs(warn_dir, exist_ok=True)
+        with open(os.path.join(warn_dir, session_id), "w") as f:
+            f.write(f"{int(round(used_percentage))}\n")
+    except Exception:
+        pass
+
+
 def get_usage():
     if os.path.exists(CACHE_FILE):
         try:
@@ -181,9 +228,15 @@ try:
 except Exception:
     pass
 
-ctx = data.get("context_window", {}).get("used_percentage")
+context_window = data.get("context_window", {}) or {}
+ctx = context_window.get("used_percentage")
 if ctx is not None:
     line1_parts.append(fmt("ctx", ctx))
+    maybe_write_compact_warn_marker(
+        session_id=data.get("session_id"),
+        used_percentage=ctx,
+        context_window_size=context_window.get("context_window_size"),
+    )
 
 line2_parts = []
 

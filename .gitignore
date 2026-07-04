@@ -68,3 +68,5 @@ plugin-catalog-cache.json
 .last_inuse_sweep
 tool-failure-log/
 skills/
+daemon.*
+__pycache__
