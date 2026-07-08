@@ -69,3 +69,4 @@ plugin-catalog-cache.json
 tool-failure-log/
 daemon.*
 __pycache__
+subagent-log/

@@ -2,23 +2,29 @@
 /**
  * @fileoverview
  *   Explore / general-purpose サブエージェントが応答完了したとき、
- *   最終応答を $CLAUDE_PROJECT_DIR/.claude/subagent-log/ に Markdown で保存する。
+ *   最終応答を ~/.claude/subagent-log/{作業ディレクトリを正規化した値}/ に Markdown で保存する。
  *
+ *   ディレクトリ正規化は ~/.claude/projects/ と同じ規則(フルパスの `/` を `-` に置換)。
  *   ファイル名には親 transcript から逆引きした Agent ツールの description を使う。
  *
  *   発火タイミング: SubagentStop
  *   原処理を阻害しない。エラーは stderr に1行出して success() を返す。
  */
 
+import { homedir } from 'node:os';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { BetaToolUseBlock } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { defineHook, runHook } from 'cc-hooks-ts';
-import { basename, dirname, join, resolve } from 'pathe';
+import { basename, dirname, join } from 'pathe';
 
-const LOG_SUBDIR = join('.claude', 'subagent-log');
+const LOG_ROOT = join(homedir(), '.claude', 'subagent-log');
 const TARGET_AGENT_TYPES = new Set(['Explore', 'general-purpose']);
 const SLUG_MAX_LEN = 60;
+
+function normalizeProjectDir(projectDir: string): string {
+  return projectDir.replace(/\//g, '-');
+}
 
 function sanitize(text: string): string {
   let normalized = text.trim();
@@ -242,7 +248,7 @@ const hook = defineHook({
         return context.success();
       }
 
-      const logDir = resolve(projectDir, LOG_SUBDIR);
+      const logDir = join(LOG_ROOT, normalizeProjectDir(projectDir));
       if (!existsSync(logDir)) {
         mkdirSync(logDir, { recursive: true });
       }
