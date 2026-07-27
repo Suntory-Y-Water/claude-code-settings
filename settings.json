@@ -43,6 +43,15 @@
             "command": "bun run -i --silent ~/.claude/scripts/typescript/session-start-reminder.ts"
           }
         ]
+      },
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/opus5-rule-inject.ts"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -99,14 +108,13 @@
     ]
   },
   "disableWorkflows": true,
+  "workflowKeywordTriggerEnabled": false,
   "statusLine": {
     "type": "command",
     "command": "~/.claude/scripts/statusline.py"
   },
   "language": "日本語",
   "spinnerTipsEnabled": false,
-  "leftArrowOpensAgents": false,
-  "workflowKeywordTriggerEnabled" : false,
   "effortLevel": "high",
   "awaySummaryEnabled": false,
   "showClearContextOnPlanAccept": true,
@@ -120,5 +128,6 @@
     "environment": [
       "$defaults"
     ]
-  }
+  },
+  "agentPushNotifEnabled": true
 }
