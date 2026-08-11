@@ -75,3 +75,7 @@ usage-data/
 
 # リポジトリ直下の skills のみ除外(.claude/skills は追跡対象)
 /skills/
+
+plugins/
+policy-limits.json
+remote-settings.json

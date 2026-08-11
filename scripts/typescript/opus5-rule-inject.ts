@@ -1,11 +1,4 @@
 #!/usr/bin/env -S bun run --silent
-/**
- * @fileoverview
- *   Opus 5 で動いているときだけ、応答形式を規定する rule を context に注入する。
- *   Opus 5 に配られる本体 system prompt には応答形式の規定が無く、空白は
- *   モデルの訓練済み既定 (フラットな散文・即作業) で埋まるため、そこを上書きする。
- */
-
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { defineHook, runHook } from 'cc-hooks-ts';
