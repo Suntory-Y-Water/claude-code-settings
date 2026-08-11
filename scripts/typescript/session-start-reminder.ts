@@ -1,9 +1,4 @@
 #!/usr/bin/env -S bun run --silent
-/**
- * @fileoverview
- *   Claude Code セッション開始時に、人間向けの確認事項を表示する。
- */
-
 import { defineHook, runHook } from 'cc-hooks-ts';
 
 const REMINDER = [

@@ -1,16 +1,4 @@
 #!/usr/bin/env -S bun run --silent
-/**
- * @fileoverview
- *   Explore / general-purpose サブエージェントが応答完了したとき、
- *   最終応答を ~/.claude/subagent-log/{作業ディレクトリを正規化した値}/ に Markdown で保存する。
- *
- *   ディレクトリ正規化は ~/.claude/projects/ と同じ規則(フルパスの `/` を `-` に置換)。
- *   ファイル名には親 transcript から逆引きした Agent ツールの description を使う。
- *
- *   発火タイミング: SubagentStop
- *   原処理を阻害しない。エラーは stderr に1行出して success() を返す。
- */
-
 import { homedir } from 'node:os';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';

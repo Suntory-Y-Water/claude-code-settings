@@ -1,12 +1,4 @@
 #!/usr/bin/env -S bun run --silent
-/**
- * @fileoverview
- *   EnterPlanMode 直後にプラン本文の文体指針を Claude に伝える。
- *
- *   AIが書く文章は形容詞・感嘆・誇張が多く読み物としてノイズになりがち。
- *   生成と編集を分離するつもりで「推敲済みのライター文体」をプランに適用させる。
- */
-
 import { defineHook, runHook } from 'cc-hooks-ts';
 
 const STYLE_GUIDE = [

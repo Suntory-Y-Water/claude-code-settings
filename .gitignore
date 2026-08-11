@@ -70,3 +70,8 @@ tool-failure-log/
 daemon.*
 __pycache__
 subagent-log/
+
+usage-data/
+
+# リポジトリ直下の skills のみ除外(.claude/skills は追跡対象)
+/skills/

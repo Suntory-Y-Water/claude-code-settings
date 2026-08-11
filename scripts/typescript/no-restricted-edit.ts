@@ -1,13 +1,3 @@
-/**
- * TypeScriptファイルでの型アサーションおよび型注釈の使用を制限するフック
- *
- * 以下の構文を含む編集を検出し、拒否する:
- * - `as any`, `as unknown` (型アサーション)
- * - `: any`, `: unknown` (型注釈)
- *
- * トリガー: Edit および MultiEdit ツールの実行前
- */
-
 import { defineHook, runHook } from 'cc-hooks-ts';
 import { extname } from 'pathe';
 

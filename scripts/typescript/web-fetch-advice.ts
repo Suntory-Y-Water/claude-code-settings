@@ -1,16 +1,13 @@
-/**
- * @fileoverview
- *   Send tips when using web fetch in Claude Code.
- *
- * @see {@link https://docs.anthropic.com/en/docs/claude-code/hooks}
- * @see {@link https://github.com/sushichan044/dotfiles/blob/main/.claude/hooks/web_fetch_advice.ts}
- */
-
 import { extract, toMarkdown } from '@mizchi/readability';
 import { defineHook } from 'cc-hooks-ts';
 import { isNonEmptyString } from '../utils/empty';
 import { parseGitHubUrlToGhCommand } from '../utils/github';
 import { isRawContentURL } from '../utils/url';
+
+// 画像はテキスト読解に不要な上、data URI (base64) だと 1 要素で数万トークンになる
+function stripImages(html: string): string {
+  return html.replaceAll(/<img\b[^>]*>/gi, '');
+}
 
 const hook = defineHook({
   trigger: {
@@ -65,14 +62,14 @@ const hook = defineHook({
       return c.success();
     }
 
-    let content = extract(html);
+    let content = extract(stripImages(html));
     let markdown = toMarkdown(content.root);
     // 静的ページでもたまに空のマークダウンが出力されることがある
     // その場合はPlaywrightで動的にHTMLを取得する
     if (markdown.length === 0) {
       const { fetchDynamicHtml } = await import('../utils/playwright');
       html = await fetchDynamicHtml(c.input.tool_input.url);
-      content = extract(html);
+      content = extract(stripImages(html));
       markdown = toMarkdown(content.root);
       // Playwrightでも取得できない場合は通常のWebFetchを使う
       if (markdown.length === 0) {

@@ -1,13 +1,4 @@
 #!/usr/bin/env -S bun run --silent
-/**
- * @fileoverview
- *   ツール実行失敗を $CLAUDE_PROJECT_DIR/.claude/tool-failure-log/YYYY-MM.jsonl に1行追記する。
- *
- *   発火タイミング: PostToolUseFailure (主要ツールのみ列挙して型を narrow)
- *   tool_input は ToolSchema 型に基づきツールごとに記録対象フィールドを選択する。
- *   原処理を阻害しない。エラーは stderr に1行出して success() を返す。
- */
-
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { defineHook, runHook } from 'cc-hooks-ts';
