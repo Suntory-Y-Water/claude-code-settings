@@ -79,3 +79,5 @@ usage-data/
 plugins/
 policy-limits.json
 remote-settings.json
+
+output-html/
