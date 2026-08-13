@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
     // Environment setup & latest features
-    "lib": ["ES2022"],
+    // DOM は Playwright の waitForFunction など、ブラウザ側で実行されるコールバックのために必要
+    "lib": ["ES2022", "DOM"],
     "target": "ES2022",
     "module": "Preserve",
     "moduleDetection": "force",
