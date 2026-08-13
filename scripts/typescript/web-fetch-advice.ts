@@ -1,7 +1,8 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { extract, toMarkdown } from '@mizchi/readability';
 import { defineHook } from 'cc-hooks-ts';
+import { Defuddle } from 'defuddle/node';
+import { parseHTML } from 'linkedom';
 import { isNonEmptyString } from '../utils/empty';
 import { parseGitHubUrlToGhCommand } from '../utils/github';
 import { isRawContentURL } from '../utils/url';
@@ -100,6 +101,16 @@ function buildFileNameBase(
   );
 }
 
+async function extractMarkdown(
+  html: string,
+  url: string,
+): Promise<{ markdown: string; title: string }> {
+  // Defuddle は HTML 文字列も受け取るが非推奨で次のメジャーで削除されるため Document を渡す
+  const { document } = parseHTML(stripImages(html));
+  const result = await Defuddle(document, url, { markdown: true });
+  return { markdown: result.content, title: result.title };
+}
+
 const hook = defineHook({
   trigger: {
     PreToolUse: {
@@ -151,27 +162,26 @@ const hook = defineHook({
       return c.success();
     }
 
-    let content = extract(stripImages(html));
-    let markdown = toMarkdown(content.root);
+    let extracted = await extractMarkdown(html, url);
     // 静的ページでもたまに空のマークダウンが出力されることがある
     // その場合はPlaywrightで動的にHTMLを取得する
-    if (markdown.length === 0) {
+    if (extracted.markdown.length === 0) {
       const { fetchDynamicHtml } = await import('../utils/playwright');
       html = await fetchDynamicHtml(url);
-      content = extract(stripImages(html));
-      markdown = toMarkdown(content.root);
+      extracted = await extractMarkdown(html, url);
       // Playwrightでも取得できない場合は通常のWebFetchを使う
-      if (markdown.length === 0) {
+      if (extracted.markdown.length === 0) {
         return c.success();
       }
     }
+    const markdown = extracted.markdown;
 
     const metaTags = collectMetaTags(html);
     const title = firstNonEmpty(
       metaTags.get('og:title'),
       metaTags.get('twitter:title'),
       extractTitleTag(html),
-      normalizeText(content.metadata.title),
+      normalizeText(extracted.title),
     );
     const description = firstNonEmpty(
       metaTags.get('description'),

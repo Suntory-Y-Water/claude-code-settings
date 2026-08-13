@@ -23,9 +23,10 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@mizchi/readability": "^0.7.7",
     "cc-hooks-ts": "^2.1.176",
+    "defuddle": "^0.19.2",
     "github-reserved-names": "^2.2.0",
+    "linkedom": "^0.18.13",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-to-string": "^4.0.0",
     "micromark": "^4.0.2",
