@@ -1,5 +1,4 @@
 #!/usr/bin/env -S bun run --silent
-import { homedir } from 'node:os';
 import {
   basename,
   dirname,
@@ -11,13 +10,27 @@ import {
 import { defineHook, runHook } from 'cc-hooks-ts';
 import { micromark } from 'micromark';
 import { gfm, gfmHtml } from 'micromark-extension-gfm';
+import { markPending, readBaseline } from './md-to-html/baseline.ts';
+import { renderDiffHtml } from './md-to-html/diff.ts';
+import { locateAnnotation } from './md-to-html/locate.ts';
+import { renderPage } from './md-to-html/page.ts';
+import {
+  type Annotation,
+  commentsPathForHtml,
+  docParamForHtml,
+  ensureServer,
+  formatBrokenAnchors,
+  OUTPUT_ROOT,
+  readCommentsFile,
+  splitFrontMatter,
+  unresolvedAnnotations,
+  writeCommentsFile,
+} from './md-to-html/shared.ts';
 
-const OUTPUT_ROOT = join(homedir(), '.claude', 'output-html');
 const TARGET_EXTENSION = '.md';
 const EXCLUDED_DIR_NAMES = new Set([
   '.git',
   'node_modules',
-  '.claude',
   '.github',
   '.vscode',
   '.idea',
@@ -41,26 +54,6 @@ const IMAGE_MIME_BY_EXT: Record<string, string> = {
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
 };
-
-function splitFrontMatter(source: string): {
-  body: string;
-  title: string | undefined;
-} {
-  if (!/^---\r?\n/.test(source)) {
-    return { body: source, title: undefined };
-  }
-  const lines = source.split('\n');
-  for (let index = 1; index < lines.length; index++) {
-    if (lines[index]?.trim() !== '---') {
-      continue;
-    }
-    const frontMatter = lines.slice(1, index).join('\n');
-    const rawTitle = frontMatter.match(/^title:\s*(.+)$/m)?.[1]?.trim();
-    const title = rawTitle?.replace(/^(["'])(.*)\1$/, '$2');
-    return { body: lines.slice(index + 1).join('\n'), title };
-  }
-  return { body: source, title: undefined };
-}
 
 function isUnderExcludedDir(filePath: string): boolean {
   return dirname(filePath)
@@ -124,79 +117,68 @@ async function embedLocalImages(
   return result + html.slice(cursor);
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function renderMarkdown(body: string): string {
+  return micromark(body, {
+    extensions: [gfm()],
+    htmlExtensions: [gfmHtml()],
+  });
 }
 
-function renderPage(title: string, contentHtml: string): string {
-  return `<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(title)}</title>
-<style>
-:root {
-  color-scheme: light dark;
-  --bg: #ffffff;
-  --fg: #1f2328;
-  --border: #d1d9e0;
-  --code-bg: #f6f8fa;
-  --link: #0969da;
-  --quote: #59636e;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1117;
-    --fg: #e6edf3;
-    --border: #3d444d;
-    --code-bg: #161b22;
-    --link: #4493f8;
-    --quote: #9198a1;
+async function saveSourcePath(
+  port: number,
+  outPath: string,
+  sourcePath: string,
+): Promise<boolean> {
+  const doc = encodeURIComponent(docParamForHtml(outPath));
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/source?doc=${doc}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sourcePath }),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
-body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
-  line-height: 1.7;
-  max-width: 700px;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
-  overflow-wrap: break-word;
+
+// 差分は data URI 埋め込み前の HTML 同士で取る(埋め込み後だと画像パスの差だけで
+// 巨大な差分になるため)。基準が無い初回と、基準から変わっていない場合は出さない
+export function renderBodyDiff(
+  previousBody: string | undefined,
+  body: string,
+  currentHtml: string,
+): string | undefined {
+  if (previousBody === undefined || previousBody === body) {
+    return undefined;
+  }
+  return renderDiffHtml(renderMarkdown(previousBody), currentHtml);
 }
-h1, h2, h3, h4, h5, h6 { line-height: 1.35; margin: 1.8em 0 0.6em; }
-h1 { font-size: 1.7rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
-h2 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
-a { color: var(--link); }
-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.875em;
-  background: var(--code-bg);
-  border-radius: 4px;
-  padding: 0.15em 0.35em;
+
+const DAMAGE_RANK = { found: 0, shifted: 1, lost: 2 } as const;
+
+// 未対応コメントの全文は UserPromptSubmit 側が注入する。ここでは
+// 「この編集がコメントの位置を壊した」という、そこには無い情報だけを出す
+export function brokenByEdit(
+  previousBody: string | undefined,
+  body: string,
+  annotations: Annotation[],
+): Annotation[] {
+  if (previousBody === undefined) {
+    return [];
+  }
+  return annotations.filter(
+    (annotation) =>
+      DAMAGE_RANK[locateAnnotation(body, annotation).status] >
+      DAMAGE_RANK[locateAnnotation(previousBody, annotation).status],
+  );
 }
-pre { background: var(--code-bg); border-radius: 8px; padding: 1rem; overflow-x: auto; }
-pre code { background: none; padding: 0; }
-blockquote { margin: 1em 0; padding: 0 1em; color: var(--quote); border-left: 4px solid var(--border); }
-table { border-collapse: collapse; display: block; overflow-x: auto; }
-th, td { border: 1px solid var(--border); padding: 0.4em 0.8em; }
-th { background: var(--code-bg); }
-img { max-width: 100%; height: auto; }
-hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
-ul, ol { padding-left: 1.6em; }
-li input[type="checkbox"] { margin-right: 0.4em; }
-</style>
-</head>
-<body>
-${contentHtml}
-</body>
-</html>
-`;
+
+async function transpileClient(): Promise<string> {
+  const source = await Bun.file(
+    join(import.meta.dir, 'md-to-html', 'client.ts'),
+  ).text();
+  return new Bun.Transpiler({ loader: 'ts' }).transformSync(source);
 }
 
 const hook = defineHook({
@@ -221,9 +203,8 @@ const hook = defineHook({
         return context.success();
       }
 
-      const { body, title: frontMatterTitle } = splitFrontMatter(
-        await mdFile.text(),
-      );
+      const source = await mdFile.text();
+      const { body, title: frontMatterTitle } = splitFrontMatter(source);
       const firstLine = body
         .split('\n')
         .find((line) => line.trim() !== '')
@@ -240,11 +221,9 @@ const hook = defineHook({
         return context.success();
       }
 
+      const rawContentHtml = renderMarkdown(body);
       const contentHtml = await embedLocalImages(
-        micromark(body, {
-          extensions: [gfm()],
-          htmlExtensions: [gfmHtml()],
-        }),
+        rawContentHtml,
         dirname(filePath),
       );
       const title =
@@ -252,22 +231,79 @@ const hook = defineHook({
         headingTitle ??
         basename(filePath, TARGET_EXTENSION);
 
-      const outPath = join(
-        OUTPUT_ROOT,
-        dirname(filePath).replaceAll('/', '-'),
-        `${basename(filePath, TARGET_EXTENSION)}.html`,
-      );
-      const isNewFile = !(await Bun.file(outPath).exists());
-      // Bun.write は親ディレクトリを自動作成する
-      await Bun.write(outPath, renderPage(title, contentHtml));
+      const outDir = join(OUTPUT_ROOT, dirname(filePath).replaceAll('/', '-'));
+      const outBase = basename(filePath, TARGET_EXTENSION);
+      const outPath = join(outDir, `${outBase}.html`);
 
-      if (!isNewFile) {
-        return context.success();
+      // 前の指示の時点の Markdown と比較して視覚差分を生成する
+      const previousBody = await readBaseline(outPath);
+      const diffHtml = renderBodyDiff(previousBody, body, rawContentHtml);
+
+      const page = renderPage({
+        title,
+        contentHtml,
+        diffHtml,
+        clientJs: await transpileClient(),
+      });
+      // Bun.write は親ディレクトリを自動作成する
+      await Bun.write(outPath, page);
+      await markPending(outPath);
+
+      // 更新時もコメント保存サーバを維持する(ブラウザ側の保存 API が依存)
+      const port = await ensureServer();
+
+      const commentsPath = commentsPathForHtml(outPath);
+      const savedViaServer =
+        port !== undefined && (await saveSourcePath(port, outPath, filePath));
+      if (!savedViaServer) {
+        // サーバが起動できないときだけ直接書く。sourcePath が欠けると注入時に
+        // 対象 Markdown を特定できなくなるので、競合リスクより欠落を避ける
+        const current = await readCommentsFile(commentsPath);
+        current.sourcePath = filePath;
+        await writeCommentsFile(commentsPath, current);
+      }
+      const comments = await readCommentsFile(commentsPath);
+
+      const relPath = docParamForHtml(outPath)
+        .split('/')
+        .map(encodeURIComponent)
+        .join('/');
+      const viewUrl =
+        port === undefined
+          ? Bun.pathToFileURL(outPath).href
+          : `http://localhost:${port}/${relPath}`;
+
+      const contextLines = [
+        `Markdown を HTML に変換しました: ${outPath}`,
+        `閲覧 URL: ${viewUrl}`,
+      ];
+      const unresolved = unresolvedAnnotations(comments);
+      if (unresolved.length > 0) {
+        const broken = brokenByEdit(previousBody, body, unresolved);
+        if (broken.length === 0) {
+          contextLines.push(
+            `未対応コメントが ${unresolved.length} 件あります (内容は次のプロンプトで注入されます)`,
+          );
+        } else {
+          contextLines.push(
+            '',
+            formatBrokenAnchors({
+              commentsPath,
+              sourcePath: filePath,
+              markdown: source,
+              annotations: broken,
+            }),
+          );
+        }
       }
       return context.json({
         event: 'PostToolUse',
         output: {
-          systemMessage: `Markdown を HTML に変換しました: ${Bun.pathToFileURL(outPath).href}`,
+          hookSpecificOutput: {
+            hookEventName: 'PostToolUse',
+            additionalContext: contextLines.join('\n'),
+          },
+          systemMessage: `Markdown を HTML に変換しました: ${viewUrl}`,
         },
       });
     } catch (err) {
