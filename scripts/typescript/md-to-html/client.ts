@@ -1,6 +1,7 @@
 // ブラウザ上で実行されるコード。フックが Bun.Transpiler で JS 化し、
 // <script type="module"> としてページにインライン展開する。
-// 外部依存や import を持たない(自己完結 HTML を保つため)
+// mermaid(サイズが大きいためサーバから配信)を除き、外部依存や import は持たない
+// (自己完結 HTML を保つため)
 
 interface Annotation {
   id: string;
@@ -151,6 +152,47 @@ function setupDiffToggle(tocAvailable: boolean): void {
   };
   contentBtn.addEventListener('click', () => select(false));
   diffBtn.addEventListener('click', () => select(true));
+}
+
+// 図の定義を SVG に置き換えるとテキスト内容が変わるため、コメントの位置計算
+// (reload)より先に描画を終わらせる必要がある
+const MERMAID_MODULE_PATH = '/_assets/mermaid/mermaid.esm.min.mjs';
+
+interface MermaidApi {
+  initialize(config: Record<string, unknown>): void;
+  run(options: { nodes: HTMLElement[] }): Promise<void>;
+}
+
+function mermaidBlocks(): HTMLElement[] {
+  if (!content) {
+    return [];
+  }
+  // 差分表示側は ins/del が定義に混ざって描画できないため対象にしない
+  return Array.from(content.querySelectorAll('pre.mermaid')).filter(
+    (node): node is HTMLElement => node instanceof HTMLElement,
+  );
+}
+
+async function renderMermaid(): Promise<void> {
+  const nodes = mermaidBlocks();
+  if (nodes.length === 0) {
+    return;
+  }
+  try {
+    const loaded = (await import(MERMAID_MODULE_PATH)) as {
+      default: MermaidApi;
+    };
+    loaded.default.initialize({
+      startOnLoad: false,
+      theme: window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'default',
+    });
+    await loaded.default.run({ nodes });
+  } catch (err) {
+    // 失敗しても図の定義がコードブロックとして残るため、通知は行わない
+    console.error('mermaid の描画に失敗しました', err);
+  }
 }
 
 function collectTextNodes(root: Node): Text[] {
@@ -636,11 +678,15 @@ setupDiffToggle(tocAvailable);
   }
 }
 if (location.protocol === 'file:') {
+  const features =
+    mermaidBlocks().length > 0
+      ? 'コメント機能と Mermaid 図の描画'
+      : 'コメント機能';
   note(
-    'コメント機能は http://localhost 経由で開いたときのみ使えます。' +
+    `${features}は http://localhost 経由で開いたときのみ使えます。` +
       'Markdown を再変換すると localhost の URL が案内されます。',
   );
 } else {
   setupSelectionUi();
-  void reload();
+  void renderMermaid().then(reload);
 }

@@ -12,6 +12,7 @@ import { micromark } from 'micromark';
 import { gfm, gfmHtml } from 'micromark-extension-gfm';
 import { markPending, readBaseline } from './md-to-html/baseline.ts';
 import { renderDiffHtml } from './md-to-html/diff.ts';
+import { highlightCodeBlocks } from './md-to-html/highlight.ts';
 import { locateAnnotation } from './md-to-html/locate.ts';
 import { renderPage } from './md-to-html/page.ts';
 import {
@@ -222,9 +223,9 @@ const hook = defineHook({
       }
 
       const rawContentHtml = renderMarkdown(body);
-      const contentHtml = await embedLocalImages(
-        rawContentHtml,
-        dirname(filePath),
+      // 差分はハイライト前の HTML 同士で取る(色付けの span が差分に混ざるため)
+      const contentHtml = await highlightCodeBlocks(
+        await embedLocalImages(rawContentHtml, dirname(filePath)),
       );
       const title =
         frontMatterTitle ??

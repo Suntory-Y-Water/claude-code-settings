@@ -31,11 +31,13 @@
     "linkedom": "^0.18.13",
     "mdast-util-from-markdown": "^2.0.3",
     "mdast-util-to-string": "^4.0.0",
+    "mermaid": "^11.16.1",
     "micromark": "^4.0.2",
     "micromark-extension-gfm": "^3.0.0",
     "node-htmldiff": "^0.9.4",
     "pathe": "^2.0.3",
     "playwright": "^1.61.0",
+    "shiki": "^4.4.3",
     "valibot": "^1.4.1"
   }
 }

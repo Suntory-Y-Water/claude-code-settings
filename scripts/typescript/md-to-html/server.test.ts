@@ -244,4 +244,13 @@ describe('コメント保存 API', () => {
       expect(stored).toEqual([baseline]);
     });
   });
+
+  describe('mermaid の配信', () => {
+    it('エントリを JavaScript として返すこと', async () => {
+      const res = await app.request('/_assets/mermaid/mermaid.esm.min.mjs');
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toContain('javascript');
+    });
+  });
 });

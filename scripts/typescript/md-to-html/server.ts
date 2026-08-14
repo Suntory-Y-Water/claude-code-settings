@@ -1,5 +1,5 @@
 #!/usr/bin/env -S bun run --silent
-import { isAbsolute, normalize } from 'node:path';
+import { dirname, isAbsolute, normalize } from 'node:path';
 import { Hono } from 'hono';
 import { serveStatic } from 'hono/bun';
 import * as v from 'valibot';
@@ -135,6 +135,21 @@ app.delete('/api/comments', async (c) => {
   }
   return c.json({ ok: true });
 });
+
+// mermaid は数 MB あり HTML への埋め込みに向かないため、node_modules から配信する。
+// エントリは図の種類ごとの chunk を相対パスで読むので dist ごと公開する
+const MERMAID_ASSET_PREFIX = '/_assets/mermaid';
+const MERMAID_DIST_DIR = dirname(
+  Bun.resolveSync('mermaid/dist/mermaid.esm.min.mjs', import.meta.dir),
+);
+
+app.use(
+  `${MERMAID_ASSET_PREFIX}/*`,
+  serveStatic({
+    root: MERMAID_DIST_DIR,
+    rewriteRequestPath: (path) => path.slice(MERMAID_ASSET_PREFIX.length),
+  }),
+);
 
 function commentsPathFromQuery(doc: string | undefined): string | undefined {
   if (doc === undefined) {

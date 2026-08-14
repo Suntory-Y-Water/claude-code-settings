@@ -84,6 +84,20 @@ code {
 }
 pre { background: var(--code-bg); border-radius: 8px; padding: 1rem; overflow-x: auto; }
 pre code { background: none; padding: 0; }
+/* Shiki は文字色だけを CSS 変数で出力する。背景はページ側の --code-bg を使う */
+.shiki, .shiki span { color: var(--shiki-light); }
+@media (prefers-color-scheme: dark) {
+  .shiki, .shiki span { color: var(--shiki-dark); }
+}
+.shiki .line { display: inline-block; min-width: 100%; }
+pre.mermaid { text-align: center; }
+pre.mermaid svg { max-width: 100%; height: auto; }
+/* 描画前は図の定義がそのまま見えるため、コードブロックとして体裁を整える */
+pre.mermaid:not([data-processed]) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+  text-align: left;
+}
 blockquote { margin: 1em 0; padding: 0 1em; color: var(--quote); border-left: 4px solid var(--border); }
 table { border-collapse: collapse; display: block; overflow-x: auto; }
 th, td { border: 1px solid var(--border); padding: 0.4em 0.8em; }
