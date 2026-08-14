@@ -8,6 +8,7 @@
     "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL": "1",
     "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "CLAUDE_AFK_TIMEOUT_MS": "86400000"
   },
   "permissions": {
@@ -18,9 +19,13 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "opus",
   "disableClaudeAiConnectors": true,
   "skillOverrides": {
     "dataviz": "off",
+    "artifact-capabilities": "off",
+    "artifact-diagramming": "off",
+    "artifact-design" : "off",
     "claude-api": "off",
     "deep-research": "off",
     "schedule": "off",
@@ -54,6 +59,16 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/inject-comments.ts"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
@@ -61,6 +76,10 @@
           {
             "type": "command",
             "command": "bun run -i --silent ~/.claude/scripts/typescript/create-plan-link.ts"
+          },
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/md-to-html.ts"
           }
         ]
       },
@@ -120,8 +139,11 @@
   "showClearContextOnPlanAccept": true,
   "plansDirectory": ".claude/plans",
   "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "dark",
   "autoCompactEnabled": true,
   "remoteControlAtStartup": false,
+  "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "useAutoModeDuringPlan": true,
   "autoMode": {
@@ -129,5 +151,5 @@
       "$defaults"
     ]
   },
-  "agentPushNotifEnabled": true
+  "leftArrowOpensAgents": false
 }
