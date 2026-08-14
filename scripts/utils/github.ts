@@ -1,11 +1,3 @@
-// @ts-check
-/**
- * @fileoverview
- *   Utility functions for GitHub URL parsing and gh CLI command generation.
- *
- * @see {@link https://github.com/sushichan044/dotfiles/blob/main/tools/github.ts}
- */
-
 import { check as isReservedNameByGitHub } from 'github-reserved-names';
 import { isRawContentURL } from './url';
 

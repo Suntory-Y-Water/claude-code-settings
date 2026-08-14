@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { defineHook } from 'cc-hooks-ts';
 import { Defuddle } from 'defuddle/node';
 import { parseHTML } from 'linkedom';
-import { isNonEmptyString } from '../utils/empty';
 import { parseGitHubUrlToGhCommand } from '../utils/github';
 import { isRawContentURL } from '../utils/url';
 
@@ -19,6 +18,10 @@ const NAMED_ENTITIES: Record<string, string> = {
   apos: "'",
   nbsp: ' ',
 };
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
 
 // 画像はテキスト読解に不要な上、data URI (base64) だと 1 要素で数万トークンになる
 function stripImages(html: string): string {
