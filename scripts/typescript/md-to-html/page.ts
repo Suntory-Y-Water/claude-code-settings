@@ -19,6 +19,8 @@ const STYLE = `
   --bg: #ffffff;
   --fg: #1f2328;
   --border: #d1d9e0;
+  /* 罫線・区切りとして意味を持つ線は非テキストコントラスト 3:1 が必要なため薄い --border と分ける */
+  --border-strong: #949494;
   --code-bg: #f6f8fa;
   --link: #0969da;
   --quote: #59636e;
@@ -32,6 +34,7 @@ const STYLE = `
     --bg: #0d1117;
     --fg: #e6edf3;
     --border: #3d444d;
+    --border-strong: #8d96a0;
     --code-bg: #161b22;
     --link: #4493f8;
     --quote: #9198a1;
@@ -45,44 +48,73 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
-  line-height: 1.7;
+  /* DADS Std-16N-175 */
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
   margin: 0;
-  padding: 2rem 1.25rem 4rem;
+  padding: 2rem 1rem 4rem;
   overflow-wrap: break-word;
 }
 html { scroll-behavior: smooth; }
 #layout {
   display: grid;
-  grid-template-columns: 200px minmax(0, 700px) 320px;
+  /* 本文 560px は 16px + 字間 0.02em で全角約34字。WCAG 1.4.8 の上限 40 字を下回る */
+  grid-template-columns: 200px minmax(0, 560px) 320px;
   gap: 2.5rem;
-  max-width: 1300px;
+  max-width: 1160px;
   margin: 0 auto;
   justify-content: center;
 }
 #side-panel { grid-column: 1; grid-row: 1; }
 #content, #diff { grid-column: 2; grid-row: 1; }
 #comment-panel { grid-column: 3; grid-row: 1; }
-@media (max-width: 980px) {
+@media (max-width: 1160px) {
   #layout { grid-template-columns: minmax(0, 1fr); }
   #content, #diff, #comment-panel, #side-panel { grid-column: 1; grid-row: auto; }
   #comment-panel, #side-panel { position: static; max-height: none; }
 }
 h1, h2, h3, h4, h5, h6 {
-  line-height: 1.35;
-  margin: 1.8em 0 0.6em;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 3rem 0 1rem;
   scroll-margin-top: 1rem;
 }
-h1 { font-size: 1.7rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
-h2 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+h1 {
+  font-size: 2rem;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid var(--border-strong);
+  padding-bottom: 0.5rem;
+}
+h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--border-strong);
+  padding-bottom: 0.5rem;
+}
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1.125rem; line-height: 1.6; }
+h5, h6 { font-size: 1rem; line-height: 1.75; }
+#content > :first-child, #diff > :first-child { margin-top: 0; }
+/* 行送りと同じ 1 行分。WCAG 1.4.12 でフォントサイズの 2 倍に上書きされても崩れないよう em で指定する */
+p { margin: 0 0 1.75em; }
 a { color: var(--link); }
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.875em;
+  /* DADS Mono: 行高 150%、字間 0 */
+  line-height: 1.5;
+  letter-spacing: 0;
   background: var(--code-bg);
   border-radius: 4px;
-  padding: 0.15em 0.35em;
+  padding: 0.125em 0.25em;
 }
-pre { background: var(--code-bg); border-radius: 8px; padding: 1rem; overflow-x: auto; }
+pre {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0 0 2rem;
+  overflow-x: auto;
+}
 pre code { background: none; padding: 0; }
 /* Shiki は文字色だけを CSS 変数で出力する。背景はページ側の --code-bg を使う */
 .shiki, .shiki span { color: var(--shiki-light); }
@@ -95,36 +127,49 @@ pre.mermaid svg { max-width: 100%; height: auto; }
 /* 描画前は図の定義がそのまま見えるため、コードブロックとして体裁を整える */
 pre.mermaid:not([data-processed]) {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.875em;
+  line-height: 1.5;
+  letter-spacing: 0;
   text-align: left;
 }
-blockquote { margin: 1em 0; padding: 0 1em; color: var(--quote); border-left: 4px solid var(--border); }
-table { border-collapse: collapse; display: block; overflow-x: auto; }
-th, td { border: 1px solid var(--border); padding: 0.4em 0.8em; }
-th { background: var(--code-bg); }
+blockquote {
+  margin: 0 0 2rem;
+  padding: 0 1rem;
+  color: var(--quote);
+  border-left: 4px solid var(--border-strong);
+}
+table { border-collapse: collapse; display: block; overflow-x: auto; margin: 0 0 2rem; }
+th, td { border: 1px solid var(--border-strong); padding: 0.75rem 1rem; }
+th { background: var(--code-bg); font-weight: 700; text-align: left; }
 img { max-width: 100%; height: auto; }
-hr { border: 0; border-top: 1px solid var(--border); margin: 2em 0; }
-ul, ol { padding-left: 1.6em; }
-li input[type="checkbox"] { margin-right: 0.4em; }
+hr { border: 0; border-top: 1px solid var(--border-strong); margin: 3rem 0; }
+ul, ol { padding-left: 1.5rem; margin: 0 0 2rem; }
+li { margin-bottom: 0.5rem; }
+li > ul, li > ol { margin: 0.5rem 0 0; }
+li > p { margin-bottom: 0.5rem; }
+li input[type="checkbox"] { margin-right: 0.5rem; }
 
 #view-toolbar {
-  max-width: 1300px;
-  margin: 0 auto 1.5rem;
+  max-width: 1160px;
+  margin: 0 auto 2rem;
   display: flex;
   gap: 0.5rem;
 }
 #view-toolbar button {
-  padding: 0.35em 1.1em;
-  border: 1px solid var(--border);
+  /* DADS Medium ボタンの最小サイズ */
+  min-width: 96px;
+  min-height: 48px;
+  padding: 0 1rem;
+  border: 1px solid var(--border-strong);
   background: var(--bg);
   color: var(--fg);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font: inherit;
+  font-size: 1rem;
 }
 #view-toolbar button.active {
   background: var(--code-bg);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 #diff ins { background: var(--ins-bg); text-decoration: none; }
@@ -136,36 +181,46 @@ li input[type="checkbox"] { margin-right: 0.4em; }
   align-self: start;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  font-size: 0.85rem;
+  /* 本文ではない補助 UI のため 14px まで下げる。これ以上小さくはしない */
+  font-size: 0.875rem;
 }
 #side-panel h2 {
   font-size: 1rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.3em;
-  margin: 0 0 0.8em;
+  border-bottom: 1px solid var(--border-strong);
+  padding-bottom: 0.5rem;
+  margin: 0 0 1rem;
 }
 #toc ul, #diff-nav ul { list-style: none; padding: 0; margin: 0; }
-#toc li { margin: 0.25em 0; }
-#toc .toc-level-h2 { padding-left: 1em; }
-#toc .toc-level-h3 { padding-left: 2em; }
-#toc a { color: var(--fg); text-decoration: none; }
-#toc a:hover { color: var(--link); }
+#toc li { margin: 0; }
+#toc .toc-level-h2 { padding-left: 1rem; }
+#toc .toc-level-h3 { padding-left: 2rem; }
+#toc a {
+  display: block;
+  /* リンクのターゲット領域 24x24 以上 */
+  min-height: 24px;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  color: var(--fg);
+  text-decoration: none;
+}
+#toc a:hover { color: var(--link); background: var(--code-bg); }
 .diff-nav-item {
   display: flex;
-  gap: 0.5em;
-  align-items: baseline;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.35em 0.55em;
-  margin-bottom: 0.5em;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
   cursor: pointer;
 }
 .diff-nav-item:hover { border-color: var(--link); }
 .diff-nav-kind {
   flex-shrink: 0;
   border-radius: 4px;
-  padding: 0 0.4em;
-  font-size: 0.78rem;
+  padding: 0 0.5rem;
 }
 .diff-nav-ins { background: var(--ins-bg); }
 .diff-nav-del { background: var(--del-bg); }
@@ -190,71 +245,83 @@ mark.annotation-mark.selected { background: var(--mark-selected); }
   align-self: start;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 #comment-panel h2 {
   font-size: 1rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.3em;
-  margin: 0 0 0.8em;
+  border-bottom: 1px solid var(--border-strong);
+  padding-bottom: 0.5rem;
+  margin: 0 0 1rem;
 }
-#comment-note { color: var(--quote); margin-bottom: 0.8em; }
+#comment-note { color: var(--quote); margin-bottom: 1rem; }
 #comment-list { padding: 0; margin: 0; }
 .comment-card {
   list-style: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  padding: 0.6rem 0.75rem;
-  margin-bottom: 0.6rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
   cursor: pointer;
 }
 .comment-card.selected { border-color: var(--link); }
 .comment-card.comment-missing { opacity: 0.6; }
 .comment-card blockquote {
-  margin: 0 0 0.4rem;
-  padding: 0 0 0 0.6em;
-  border-left: 3px solid var(--border);
+  margin: 0 0 0.5rem;
+  padding: 0 0 0 0.75rem;
+  border-left: 3px solid var(--border-strong);
   color: var(--quote);
 }
-.comment-card p { margin: 0 0 0.4rem; white-space: pre-wrap; }
+/* コメント本文は読ませる文章のため、パネルの 14px ではなく本文と同じ 16px にする */
+.comment-card p { margin: 0 0 0.5rem; font-size: 1rem; white-space: pre-wrap; }
 .comment-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   color: var(--quote);
-  font-size: 0.78rem;
 }
 .comment-delete {
-  border: 1px solid var(--border);
+  position: relative;
+  /* DADS X-Small ボタンの最小サイズ */
+  min-width: 72px;
+  min-height: 28px;
+  border: 1px solid var(--border-strong);
   background: none;
   color: var(--quote);
   border-radius: 4px;
-  padding: 0.1em 0.6em;
+  padding: 0 0.5rem;
   cursor: pointer;
-  font-size: 0.78rem;
+  font: inherit;
 }
+/* X-Small は 44x44 に届かないため、見た目を変えずに当たり判定だけ広げる */
+.comment-delete::after { content: ''; position: absolute; inset: -8px; }
 .comment-delete:hover { color: #d1242f; border-color: #d1242f; }
 
 #annotate-button {
   position: absolute;
   z-index: 10;
-  border: 1px solid var(--border);
+  /* DADS Small ボタン相当。ターゲット領域 44x44 を満たすため高さだけ 44px に上げる */
+  min-width: 80px;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
   background: var(--bg);
   color: var(--fg);
-  border-radius: 6px;
-  padding: 0.3em 0.8em;
+  border-radius: 8px;
+  padding: 0 1rem;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  font-size: 0.85rem;
+  font: inherit;
+  font-size: 1rem;
 }
 .comment-popover {
   position: absolute;
   z-index: 20;
-  width: 300px;
+  width: 320px;
+  box-sizing: border-box;
   background: var(--bg);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  padding: 0.75rem;
+  padding: 1rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 .comment-popover textarea {
@@ -262,27 +329,32 @@ mark.annotation-mark.selected { background: var(--mark-selected); }
   box-sizing: border-box;
   background: var(--code-bg);
   color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5em;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 0.5rem;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 1rem;
+  line-height: 1.75;
   resize: vertical;
 }
 .comment-popover-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
 }
 .comment-popover-actions button {
-  border: 1px solid var(--border);
+  /* DADS Medium ボタンの最小サイズ */
+  min-width: 96px;
+  min-height: 48px;
+  border: 1px solid var(--border-strong);
   background: var(--bg);
   color: var(--fg);
-  border-radius: 6px;
-  padding: 0.3em 0.9em;
+  border-radius: 8px;
+  padding: 0 1rem;
   cursor: pointer;
-  font-size: 0.85rem;
+  font: inherit;
+  font-size: 1rem;
 }
 .comment-popover-actions button.primary {
   background: var(--link);
