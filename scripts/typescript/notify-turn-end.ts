@@ -33,7 +33,8 @@ const hook = defineHook({
     }
 
     try {
-      await Bun.spawn(command, { stdio: ['ignore', 'ignore', 'ignore'] }).exited;
+      await Bun.spawn(command, { stdio: ['ignore', 'ignore', 'ignore'] })
+        .exited;
     } catch {
       // 通知音が鳴らないだけなのでセッションは止めない
     }
