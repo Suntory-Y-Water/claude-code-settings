@@ -80,6 +80,10 @@
           {
             "type": "command",
             "command": "bun run -i --silent ~/.claude/scripts/typescript/md-to-html.ts"
+          },
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/style-check.ts"
           }
         ]
       },
@@ -100,6 +104,16 @@
           {
             "type": "command",
             "command": "rtk hook claude"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/style-check-stop.ts"
           }
         ]
       }

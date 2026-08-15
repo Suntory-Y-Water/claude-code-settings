@@ -1,0 +1,228 @@
+export type Severity = 'severe' | 'warning';
+
+export interface WordRule {
+  readonly id: string;
+  readonly category: string;
+  readonly severity: Severity;
+  readonly pattern: RegExp;
+  readonly good: string;
+}
+
+export interface DocumentRule {
+  readonly category: string;
+  readonly severity: Severity;
+  readonly threshold: number;
+  readonly good: string;
+}
+
+// 照合は 1 文ずつ行い g フラグを付けない。そのため `^` は文の先頭を指す
+export const wordRules = [
+  {
+    id: 'empty-adjective-emphasis',
+    category: '空虚な形容',
+    severity: 'severe',
+    pattern: /不可欠|核心的|鍵となる|根本的な/u,
+    good: '何が無いと何ができなくなるかを書く。例:「型定義が無いと tool_input の形が決まらない」',
+  },
+  {
+    id: 'empty-adjective-coverage',
+    category: '空虚な形容',
+    severity: 'severe',
+    pattern: /多角的|包括的|総合的/u,
+    good: 'どの角度から何をいくつ見たかを書く。例:「実行時間とメモリ使用量の 2 つを測った」',
+  },
+  {
+    id: 'front-facing',
+    category: '正面から系',
+    severity: 'severe',
+    pattern: /正面から(?:扱う|回収する|見る|書く|立てる)/u,
+    good: '姿勢の宣言を削り、動作だけ書く。例:「本章では〇〇の理論を扱う」「ここで、この前提を回収する」',
+  },
+  {
+    id: 'dash',
+    category: '記号',
+    severity: 'severe',
+    pattern: /[—―─]/u,
+    good: '同格・補足の挿入は括弧()にする。言い換えは句点で二文に分けるか読点でつなぐ。見出しは単一の自然な句にする',
+  },
+  {
+    id: 'kikimasu',
+    category: '比喩の動詞',
+    severity: 'severe',
+    pattern: /効きます/u,
+    good: '何がどう作用したかをそのまま書く。例:「ヘッダーが適用されています」',
+  },
+  {
+    id: 'preview',
+    category: '予告',
+    severity: 'warning',
+    pattern:
+      /重要なのは[^。]{0,60}である|ここでは[^。]{0,60}について見ていく|本章では/u,
+    good: '予告を削って主張から書く。例:「評価の中心は、正しさを誰が知っているかにある」',
+  },
+  {
+    id: 'summary',
+    category: '総括',
+    severity: 'warning',
+    pattern: /まとめると|要するに|に他ならない/u,
+    good: '直前の言い換えだけなら削る。結論は一度だけ書く',
+  },
+  {
+    id: 'explore',
+    category: '予告',
+    severity: 'warning',
+    pattern: /探求する/u,
+    good: '何をするかを書く。例:「〇〇の理論を扱う」',
+  },
+  {
+    id: 'empty-verb-dig',
+    category: '空虚な動詞',
+    severity: 'warning',
+    pattern: /掘り下げる|深掘りする|言語化する/u,
+    good: '何をどう書いたかを示す。例:「実測値を 3 種類に分けて数えた」',
+  },
+  {
+    id: 'empty-verb-touch',
+    category: '空虚な動詞',
+    severity: 'warning',
+    pattern: /触れる|言及する/u,
+    good: '何をどこまで説明するかを書く。例:「〇〇の失敗例だけを説明する」',
+  },
+  {
+    id: 'connective-frame',
+    category: '接続の型',
+    severity: 'warning',
+    pattern: /において|という側面から|の観点から/u,
+    good: '助詞でそのまま書く。例:「この設定では」「実行時間で比べると」',
+  },
+  {
+    id: 'connective-additive',
+    category: '接続の型',
+    severity: 'warning',
+    pattern: /^(?:さらに|また|加えて)[、，]/u,
+    good: '前の文との論理関係を示す語にする。例:「そのため」「一方」。関係が無いなら段落を分ける',
+  },
+  {
+    id: 'weak-hedge',
+    category: '弱い緩和',
+    severity: 'warning',
+    pattern: /と言えるだろう|かもしれない/u,
+    good: '根拠があるなら断定する。推量・仮定・読者の疑念・作中人物の認識を表すときは残してよい',
+  },
+  {
+    id: 'empty-emphasis',
+    category: '空虚な強調',
+    severity: 'warning',
+    pattern: /非常に|極めて|大いに/u,
+    good: '数値か比較対象を書く。例:「同じ処理の 3 倍速い」',
+  },
+  {
+    id: 'masani',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /まさに/u,
+    good: '強調を削って事実だけ書く',
+  },
+  {
+    id: 'jargon-trap',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /罠/u,
+    good: '何が起きるかをそのまま書く。例:「この設定では stdout が Claude に届かない」',
+  },
+  {
+    id: 'jargon-technique',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /テク(?![ニノス])/u,
+    good: '正式名称で書く。例:「手法」「書き方」',
+  },
+  {
+    id: 'dismissive',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /カス(?![タケ])|くだらない/u,
+    good: '対象を名指しして、何がどう不足しているかを書く',
+  },
+  {
+    id: 'calm-down',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /少し冷静になって考えると/u,
+    good: '前置きを削って結論から書く',
+  },
+] as const satisfies readonly WordRule[];
+
+export const documentRules = {
+  'sentence-ending-repeat': {
+    category: '文末の重複',
+    severity: 'warning',
+    threshold: 3,
+    good: '文末を変える。例:「〜します」「〜です」「〜になります」を混ぜる。体言止めにしない',
+  },
+  'polite-plain-mixed': {
+    category: '文体の混在',
+    severity: 'warning',
+    threshold: 1,
+    good: '敬体か常体のどちらかに統一する',
+  },
+  'dewanaku-overuse': {
+    category: '対句の多用',
+    severity: 'warning',
+    threshold: 4,
+    good: '「AではなくB」の対句を減らす。残す箇所には否定の根拠を一文添える',
+  },
+  taigendome: {
+    category: '体言止め',
+    severity: 'warning',
+    threshold: 1,
+    good: '述語で言い切る。例:「〜が原因。」→「〜が原因です。」',
+  },
+} as const satisfies Record<string, DocumentRule>;
+
+// 長い語尾から先に照合する。「ました」より前に「ませんでした」を置く
+export const politeEndings = [
+  'ませんでした',
+  'ましょう',
+  'ますか',
+  'ません',
+  'ました',
+  'ます',
+  'でしたか',
+  'でしょう',
+  'でした',
+  'ですか',
+  'です',
+] as const;
+
+export const plainEndings = [
+  'であった',
+  'である',
+  'なかった',
+  'だった',
+  'ない',
+  'だ',
+  'た',
+  'る',
+  'う',
+  'い',
+] as const;
+
+export type WordRuleId = (typeof wordRules)[number]['id'];
+export type DocumentRuleId = keyof typeof documentRules;
+export type RuleId = WordRuleId | DocumentRuleId;
+
+export interface Violation {
+  ruleId: RuleId;
+  category: string;
+  severity: Severity;
+  matched: string;
+  sentence: string;
+  good: string;
+}
+
+export function documentRule<Id extends DocumentRuleId>(
+  id: Id,
+): DocumentRule & { id: Id } {
+  return { id, ...documentRules[id] };
+}

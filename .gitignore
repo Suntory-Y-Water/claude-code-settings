@@ -82,3 +82,5 @@ remote-settings.json
 
 output-html/
 web-fetch/
+
+style-check/
