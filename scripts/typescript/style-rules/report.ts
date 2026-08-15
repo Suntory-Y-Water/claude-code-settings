@@ -1,18 +1,75 @@
-import type { Violation } from './rules.ts';
+import type { RuleId, Severity, Violation } from './rules.ts';
 
-const MAX_ENTRIES = 8;
+const MAX_GROUPS = 8;
 
-const SEVERITY_LABEL = { severe: '重大', warning: '警告' } as const;
+// tsc や eslint と同じ語にして、どちらがターンを止めるかを既知の意味に乗せる
+const SEVERITY_LABEL = { severe: 'error', warning: 'warning' } as const;
 
 // 語だけ置き換えると別の語形で同じ問題が残り、文が壊れる。丸ごと書き直させる
 const REWRITE_INSTRUCTION =
-  '該当文を丸ごと書き直してください。検出語だけを別の語に置き換える直し方は禁止です。';
+  '該当文を丸ごと書き直す。検出語だけの同義語置換は禁止。';
+const SEVERITY_INSTRUCTION =
+  'error は修正必須(未修正だとターンを終了できない)、warning は任意。';
+const REPEATED_GOOD = '上と同じ';
 
-function formatEntry(violation: Violation): string {
+interface Hit {
+  ruleId: RuleId;
+  matched: string;
+  good: string;
+}
+
+interface Group {
+  sentence: string;
+  severity: Severity;
+  hits: Hit[];
+}
+
+// 1 文に複数の指摘が当たる。文ごとにまとめないと指摘の数だけ部分修正を促してしまう
+function groupBySentence(violations: Violation[]): Group[] {
+  const groups = new Map<string, Group>();
+  for (const violation of violations) {
+    const hit: Hit = {
+      ruleId: violation.ruleId,
+      matched: violation.matched,
+      good: violation.good,
+    };
+    const group = groups.get(violation.sentence);
+    if (group === undefined) {
+      groups.set(violation.sentence, {
+        sentence: violation.sentence,
+        severity: violation.severity,
+        hits: [hit],
+      });
+      continue;
+    }
+    // 同じ文字列の文が別々の箇所にあると同じ指摘が二重に届く
+    if (group.hits.some((existing) => existing.ruleId === hit.ruleId)) {
+      continue;
+    }
+    if (violation.severity === 'severe') {
+      group.severity = 'severe';
+    }
+    group.hits.push(hit);
+  }
+  return [...groups.values()];
+}
+
+function markRepeated(groups: Group[]): Group[] {
+  const shownRules = new Set<RuleId>();
+  return groups.map((group) => ({
+    ...group,
+    hits: group.hits.map((hit) => {
+      const repeated = shownRules.has(hit.ruleId);
+      shownRules.add(hit.ruleId);
+      return repeated ? { ...hit, good: REPEATED_GOOD } : hit;
+    }),
+  }));
+}
+
+function formatGroup(group: Group): string {
   return [
-    `[${SEVERITY_LABEL[violation.severity]}] ${violation.category}: ${violation.matched}`,
-    `  該当文: ${violation.sentence}`,
-    `  書き直し方: ${violation.good}`,
+    `[${SEVERITY_LABEL[group.severity]}] ${group.sentence}`,
+    ...group.hits.map((hit) => `  ${hit.matched}: ${hit.good}`),
   ].join('\n');
 }
 
@@ -20,22 +77,23 @@ export function formatReport(
   filePath: string,
   violations: Violation[],
 ): string {
-  const severe = violations.filter((entry) => entry.severity === 'severe');
-  const shown = [
-    ...severe,
-    ...violations.filter((entry) => entry.severity === 'warning'),
-  ].slice(0, MAX_ENTRIES);
-  const omitted = violations.length - shown.length;
+  const groups = groupBySentence(violations);
+  const ordered = [
+    ...groups.filter((group) => group.severity === 'severe'),
+    ...groups.filter((group) => group.severity === 'warning'),
+  ];
+  const shown = markRepeated(ordered.slice(0, MAX_GROUPS));
+  const omitted = ordered.length - shown.length;
 
   const lines = [
-    `日本語スタイル検査: ${filePath}`,
-    `重大 ${severe.length} 件 / 警告 ${violations.length - severe.length} 件`,
+    `style-check ${filePath}`,
     REWRITE_INSTRUCTION,
+    SEVERITY_INSTRUCTION,
     '',
-    ...shown.map(formatEntry),
+    ...shown.map(formatGroup),
   ];
   if (omitted > 0) {
-    lines.push('', `ほか ${omitted} 件は省略しました。`);
+    lines.push('', `ほか ${omitted} 文は省略しました。`);
   }
   return lines.join('\n');
 }
@@ -44,14 +102,14 @@ export function formatStopReport(
   entries: { filePath: string; sentences: string[] }[],
 ): string {
   const lines = [
-    '日本語スタイル検査の重大な指摘が未修正のまま残っています。',
+    'style-check: error が未修正のまま残っています。',
     REWRITE_INSTRUCTION,
     '',
   ];
   for (const entry of entries) {
     lines.push(entry.filePath);
     for (const sentence of entry.sentences) {
-      lines.push(`  該当文: ${sentence}`);
+      lines.push(`  ${sentence}`);
     }
   }
   return lines.join('\n');

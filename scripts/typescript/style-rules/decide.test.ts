@@ -81,8 +81,8 @@ describe('書き込み直後の検査', () => {
       const reason = await write(filePath, SEVERE);
 
       expect(reason).toContain(filePath);
-      expect(reason).toContain(`該当文: ${SEVERE}`);
-      expect(reason).toContain('書き直し方: ');
+      expect(reason).toContain(`[error] ${SEVERE}`);
+      expect(reason).toContain('  不可欠: ');
     });
 
     test('差し替えた断片に含まれる語だけを報告すること', async () => {
@@ -168,7 +168,7 @@ describe('ターン終了時の確認', () => {
     const reason = await stop();
 
     expect(reason).toContain(filePath);
-    expect(reason).toContain(`該当文: ${SEVERE}`);
+    expect(reason).toContain(`  ${SEVERE}`);
   });
 
   test('該当文が書き直されて消えている時、そのまま終了でき、記録も消えること', async () => {
