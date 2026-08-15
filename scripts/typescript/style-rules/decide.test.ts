@@ -97,10 +97,16 @@ describe('書き込み直後の検査', () => {
       const blocked = createSessionStore(await writeMarkdown('blocker', 'x'));
       const filePath = await writeMarkdown('a.md', SEVERE);
 
+      // decideWrite は例外の内容を stderr に直接書くため、
+      // 差し替えないとテスト出力に想定内の診断行が混ざる
+      const original = process.stderr.write;
+      process.stderr.write = (() => true) as typeof process.stderr.write;
       const reason = await decideWrite(
         { filePath, writtenText: SEVERE, sessionId: SESSION_ID },
         blocked,
-      );
+      ).finally(() => {
+        process.stderr.write = original;
+      });
 
       expect(reason).toBeUndefined();
     });
