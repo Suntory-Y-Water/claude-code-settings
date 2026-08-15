@@ -21,7 +21,8 @@ const hook = defineHook({
     Stop: true,
   },
 
-  run: (context) => {
+  // settings.json の async: true でこの hook 自体がバックグラウンド実行されるため、再生完了まで待ってよい
+  run: async (context) => {
     if (context.input.stop_hook_active) {
       return context.success();
     }
@@ -32,8 +33,7 @@ const hook = defineHook({
     }
 
     try {
-      // 再生完了を待つとターン終了がその分遅れるので、起動だけして切り離す
-      Bun.spawn(command, { stdio: ['ignore', 'ignore', 'ignore'] }).unref();
+      await Bun.spawn(command, { stdio: ['ignore', 'ignore', 'ignore'] }).exited;
     } catch {
       // 通知音が鳴らないだけなのでセッションは止めない
     }
