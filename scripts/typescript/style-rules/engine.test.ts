@@ -95,6 +95,30 @@ describe('語のルール', () => {
     });
     expect(violations[0]?.good).not.toBe('');
   });
+
+  test('同じ severe が 3 文に当たる時、打ち切らずに全て報告すること', async () => {
+    const source = [
+      '型定義は不可欠である。',
+      '設定ファイルは不可欠である。',
+      '疎通確認は不可欠である。',
+    ].join('\n\n');
+
+    const violations = await check(source);
+
+    expect(ofRule(violations, 'empty-adjective-emphasis')).toHaveLength(3);
+  });
+
+  test('同じ warning が 3 文に当たる時、2 文で打ち切ること', async () => {
+    const source = [
+      'この処理は非常に速い。',
+      'あの処理も非常に軽い。',
+      'どの処理も非常に短い。',
+    ].join('\n\n');
+
+    const violations = await check(source);
+
+    expect(ofRule(violations, 'empty-emphasis')).toHaveLength(2);
+  });
 });
 
 describe('検査しない箇所', () => {

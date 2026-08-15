@@ -192,6 +192,20 @@ describe('ターン終了時の確認', () => {
     expect(reason).toBeUndefined();
   });
 
+  test('差し戻し文面に載りきらない数の指摘がある時、載らなかった文も示されること', async () => {
+    const body = Array.from(
+      { length: 10 },
+      (_, index) => `項目 ${index + 1} の設定は不可欠である。`,
+    ).join('\n\n');
+    const lastSentence = '項目 10 の設定は不可欠である。';
+    const filePath = await writeMarkdown('a.md', body);
+    expect(await write(filePath, body)).not.toContain(lastSentence);
+
+    const reason = await stop();
+
+    expect(reason).toContain(lastSentence);
+  });
+
   test('一度止めても直らなかった時、記録を捨てて終了させること', async () => {
     const filePath = await writeMarkdown('a.md', SEVERE);
     await write(filePath, SEVERE);
