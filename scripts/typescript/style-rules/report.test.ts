@@ -6,8 +6,8 @@ const severe: Violation = {
   ruleId: 'empty-adjective-emphasis',
   category: '空虚な形容',
   severity: 'severe',
-  matched: '不可欠',
-  sentence: '型定義は不可欠である。',
+  matched: '核心的',
+  sentence: '型定義は核心的である。',
   good: '何が無いと何ができなくなるかを書く',
 };
 

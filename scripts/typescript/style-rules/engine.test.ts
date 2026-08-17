@@ -18,7 +18,8 @@ function wordViolations(violations: Violation[]): Violation[] {
 
 // 語ルールと 1 対 1 で対応させる。例文の無いルールを足すと型検査が落ちる
 const hitCases = {
-  'empty-adjective-emphasis': ['型定義は不可欠である。', '不可欠'],
+  'empty-adjective-emphasis': ['型定義は核心的である。', '核心的'],
+  'empty-adjective-weak': ['型定義は不可欠である。', '不可欠'],
   'empty-adjective-coverage': ['多角的な検討を行う。', '多角的'],
   'front-facing': ['この前提を正面から回収する。', '正面から回収する'],
   dash: ['設計—実装の順で進める。', '—'],
@@ -32,7 +33,6 @@ const hitCases = {
   'connective-additive': ['また、実行時間を測った。', 'また、'],
   'weak-hedge': ['これは速いと言えるだろう。', 'と言えるだろう'],
   'empty-emphasis': ['これは非常に速い。', '非常に'],
-  masani: ['まさにその通りである。', 'まさに'],
   'jargon-trap': ['これは設定の罠である。', '罠'],
   'jargon-technique': ['これは便利なテクである。', 'テク'],
   dismissive: ['この案はカスである。', 'カス'],
@@ -80,6 +80,12 @@ describe('語のルール', () => {
     expect(ofRule(violations, ruleId)).toEqual([]);
   });
 
+  test('コーパス校正で対象から外した語は検出されないこと', async () => {
+    const violations = await check('まさにその通りである。');
+
+    expect(wordViolations(violations)).toEqual([]);
+  });
+
   test('禁止語を含まない地の文からは、語の指摘が出ないこと', async () => {
     const source = [
       'この関数は設定ファイルを読み込む。',
@@ -92,21 +98,21 @@ describe('語のルール', () => {
   });
 
   test('指摘に検出語・該当文・書き直し方が揃うこと', async () => {
-    const violations = await check('型定義は不可欠である。');
+    const violations = await check('型定義は核心的である。');
 
     expect(violations[0]).toMatchObject({
       severity: 'severe',
-      matched: '不可欠',
-      sentence: '型定義は不可欠である。',
+      matched: '核心的',
+      sentence: '型定義は核心的である。',
     });
     expect(violations[0]?.good).not.toBe('');
   });
 
   test('同じ severe が 3 文に当たる時、打ち切らずに全て報告すること', async () => {
     const source = [
-      '型定義は不可欠である。',
-      '設定ファイルは不可欠である。',
-      '疎通確認は不可欠である。',
+      '型定義は核心的である。',
+      '設定ファイルは核心的である。',
+      '疎通確認は核心的である。',
     ].join('\n\n');
 
     const violations = await check(source);
@@ -132,7 +138,7 @@ describe('検査しない箇所', () => {
     const source = [
       '本文です。',
       '```ts',
-      'const label = "不可欠";',
+      'const label = "核心的";',
       '```',
     ].join('\n');
 
@@ -142,7 +148,7 @@ describe('検査しない箇所', () => {
   });
 
   test('インラインコードで囲んだ禁止語を検出しないこと', async () => {
-    const violations = await check('設定の名前は `不可欠` と書く。');
+    const violations = await check('設定の名前は `核心的` と書く。');
 
     expect(ofRule(violations, 'empty-adjective-emphasis')).toEqual([]);
   });
@@ -160,7 +166,7 @@ describe('検査しない箇所', () => {
   });
 
   test('フロントマターの中を検出しないこと', async () => {
-    const source = ['---', 'title: 不可欠な話', '---', '本文です。'].join('\n');
+    const source = ['---', 'title: 核心的な話', '---', '本文です。'].join('\n');
 
     const violations = await check(source);
 
@@ -168,7 +174,7 @@ describe('検査しない箇所', () => {
   });
 
   test('HTML コメントの中を検出しないこと', async () => {
-    const source = ['<!--', '不可欠なメモ', '-->', '本文です。'].join('\n');
+    const source = ['<!--', '核心的なメモ', '-->', '本文です。'].join('\n');
 
     const violations = await check(source);
 
@@ -176,7 +182,7 @@ describe('検査しない箇所', () => {
   });
 
   test('本文中の水平線より後も検査されること', async () => {
-    const source = ['前の文です。', '---', '型定義は不可欠である。'].join('\n');
+    const source = ['前の文です。', '---', '型定義は核心的である。'].join('\n');
 
     const violations = await check(source);
 
@@ -195,7 +201,7 @@ describe('検査しない箇所', () => {
 });
 
 describe('書いた範囲での絞り込み', () => {
-  const source = ['型定義は不可欠である。', '結果を保存する。'].join('\n');
+  const source = ['型定義は核心的である。', '結果を保存する。'].join('\n');
 
   test('差し替えた断片に無い語は報告しないこと', async () => {
     const violations = await check(source, '結果を保存する。');
@@ -204,7 +210,7 @@ describe('書いた範囲での絞り込み', () => {
   });
 
   test('差し替えた断片にある語は報告すること', async () => {
-    const violations = await check(source, '型定義は不可欠である。');
+    const violations = await check(source, '型定義は核心的である。');
 
     expect(ofRule(violations, 'empty-adjective-emphasis')).toHaveLength(1);
   });
@@ -316,21 +322,44 @@ describe('敬体と常体の混在', () => {
   });
 });
 
-describe('「ではなく」の多用', () => {
+describe('対句の多用', () => {
   const line = (index: number) => `${index} 番は A ではなく B を選ぶ。`;
 
-  test('1 ファイルに 4 回出た時、回数と該当文が示されること', async () => {
-    const source = [line(1), line(2), line(3), line(4)].join('\n');
+  test('1 ファイルに 3 回出た時、回数と該当文が示されること', async () => {
+    const source = [line(1), line(2), line(3)].join('\n');
 
     const violations = await check(source);
 
     const hit = ofRule(violations, 'dewanaku-overuse')[0];
-    expect(hit?.matched).toContain('4 回');
+    expect(hit?.matched).toContain('3 回');
     expect(hit?.sentence).toContain(line(1));
   });
 
-  test('3 回までは指摘されないこと', async () => {
-    const source = [line(1), line(2), line(3)].join('\n');
+  test('2 回までは指摘されないこと', async () => {
+    const source = [line(1), line(2)].join('\n');
+
+    const violations = await check(source);
+
+    expect(ofRule(violations, 'dewanaku-overuse')).toEqual([]);
+  });
+
+  test('「だけでなく〜も」も同じ対句として数えること', async () => {
+    const source = [
+      'A だけでなく B も選ぶ。',
+      'C だけでなく D も選ぶ。',
+      'E だけでなく F も選ぶ。',
+    ].join('\n');
+
+    const violations = await check(source);
+
+    expect(ofRule(violations, 'dewanaku-overuse')[0]?.matched).toContain(
+      '3 回',
+    );
+  });
+
+  test('回数が閾値に達しても、地の文に対する比率が薄い時は指摘されないこと', async () => {
+    const filler = Array.from({ length: 148 }, () => '設定を読み込む。');
+    const source = [line(1), line(2), line(3), ...filler].join('\n');
 
     const violations = await check(source);
 
@@ -386,12 +415,12 @@ describe('体言止め', () => {
 
 describe('重大度', () => {
   test('重大なルールに当たった文だけが重大として取り出せること', async () => {
-    const source = ['型定義は不可欠である。', 'これは非常に速い。'].join('\n');
+    const source = ['型定義は核心的である。', 'これは非常に速い。'].join('\n');
 
     const severe = severeViolations(await check(source));
 
     expect(severe.map((violation) => violation.sentence)).toEqual([
-      '型定義は不可欠である。',
+      '型定義は核心的である。',
     ]);
   });
 

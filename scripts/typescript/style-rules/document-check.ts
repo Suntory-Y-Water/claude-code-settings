@@ -1,4 +1,5 @@
 import {
+  antithesisRatioThreshold,
   documentRule,
   plainEndings,
   politeEndings,
@@ -94,14 +95,26 @@ function checkStyleMix(prose: Sentence[]): Violation[] {
   ];
 }
 
-function checkDewanaku(prose: Sentence[]): Violation[] {
-  const rule = documentRule('dewanaku-overuse');
-  const hits = prose.filter((sentence) => sentence.text.includes('ではなく'));
-  const count = prose.reduce(
-    (total, sentence) => total + sentence.text.split('ではなく').length - 1,
+// 「AではなくB」と「AだけでなくBも」を同じ対句として数える。比率の閾値が
+// 両方をまとめて校正されているため、片方だけ数えると閾値と噛み合わない
+const ANTITHESIS_PATTERNS = [/ではなく/gu, /だけでなく.{0,10}も/gu];
+
+function antithesisCount(text: string): number {
+  return ANTITHESIS_PATTERNS.reduce(
+    (total, pattern) => total + (text.match(pattern)?.length ?? 0),
     0,
   );
-  if (count < rule.threshold) {
+}
+
+function checkDewanaku(prose: Sentence[]): Violation[] {
+  const rule = documentRule('dewanaku-overuse');
+  const hits = prose.filter((sentence) => antithesisCount(sentence.text) > 0);
+  const count = prose.reduce(
+    (total, sentence) => total + antithesisCount(sentence.text),
+    0,
+  );
+  const ratio = prose.length === 0 ? 0 : count / prose.length;
+  if (count < rule.threshold || ratio < antithesisRatioThreshold) {
     return [];
   }
   return [
@@ -109,7 +122,7 @@ function checkDewanaku(prose: Sentence[]): Violation[] {
       ruleId: rule.id,
       category: rule.category,
       severity: rule.severity,
-      matched: `「ではなく」が ${count} 回`,
+      matched: `対句が ${count} 回(地の文 ${prose.length} 文)`,
       sentence: hits
         .slice(0, MAX_EXAMPLES)
         .map((sentence) => sentence.text)

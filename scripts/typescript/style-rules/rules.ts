@@ -15,13 +15,28 @@ export interface DocumentRule {
   readonly good: string;
 }
 
+// 語彙と閾値の一部は skill natural-japanese の scripts/lint.py の
+// コーパス校正(人間 103 文書 + AI 81 文書)に合わせている。skill は
+// skills-lock.json でハッシュ管理されているため、更新したら lint.py の
+// FORBIDDEN_PHRASES・FORBIDDEN_PHRASES_WEAK_SIGNAL・ANTITHESIS_* の差分を見る。
+// 対応時点のハッシュは 043db25ceb40d2bb1eec4e6c18605f02e2e6938773fb91cbce8381e5c1f447c5
+
 // 照合は 1 文ずつ行い g フラグを付けない。そのため `^` は文の先頭を指す
 export const wordRules = [
   {
     id: 'empty-adjective-emphasis',
     category: '空虚な形容',
     severity: 'severe',
-    pattern: /不可欠|核心的|鍵となる|根本的な/u,
+    pattern: /核心的|鍵となる|根本的な/u,
+    good: '何が無いと何ができなくなるかを書く。例:「型定義が無いと tool_input の形が決まらない」',
+  },
+  {
+    // 「不可欠」は人間側でも一定数使われる(人間 6〜15 回 vs AI 2 回前後)ため、
+    // 同じ空虚な形容でも severe には上げない
+    id: 'empty-adjective-weak',
+    category: '空虚な形容',
+    severity: 'warning',
+    pattern: /不可欠/u,
     good: '何が無いと何ができなくなるかを書く。例:「型定義が無いと tool_input の形が決まらない」',
   },
   {
@@ -116,13 +131,8 @@ export const wordRules = [
     pattern: /非常に|極めて|大いに/u,
     good: '数値か比較対象を書く。例:「同じ処理の 3 倍速い」',
   },
-  {
-    id: 'masani',
-    category: '過去の指摘',
-    severity: 'warning',
-    pattern: /まさに/u,
-    good: '強調を削って事実だけ書く',
-  },
+  // 「まさに」は検出しない。人間の使用が多く AI の癖ではないと実測されている
+  // (人間 24 回 vs AI 0 回)
   {
     id: 'jargon-trap',
     category: '過去の指摘',
@@ -190,9 +200,12 @@ export const documentRules = {
   'dewanaku-overuse': {
     category: '対句の多用',
     severity: 'warning',
-    threshold: 4,
-    good: '「AではなくB」の対句を減らす。残す箇所には否定の根拠を一文添える',
+    threshold: 3,
+    good: '「AではなくB」「AだけでなくBも」の対句を減らす。残す箇所には否定の根拠を一文添える',
   },
+  // natural-japanese は「長文なのに体言止めが 1 つも無い」ことを AI らしさとして
+  // 検出する(体言止めは人間の修辞技法という実測結果)。ここは逆向きで、
+  // 体言止め自体を避けたいという好みを規則にしている
   taigendome: {
     category: '体言止め',
     severity: 'warning',
@@ -200,6 +213,10 @@ export const documentRules = {
     good: '述語で言い切る。例:「〜が原因。」→「〜が原因です。」',
   },
 } as const satisfies Record<string, DocumentRule>;
+
+// 回数だけで判定すると長い文書ほど当たりやすい。密度が薄いうちは人間の修辞と
+// 区別がつかないため、地の文に対する比率も条件にする
+export const antithesisRatioThreshold = 0.02;
 
 // 長い語尾から先に照合する。「ました」より前に「ませんでした」を置く
 export const politeEndings = [
