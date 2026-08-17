@@ -2,21 +2,36 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { decideStop, decideWrite } from './decide.ts';
-import { createSessionStore, type SessionStore } from './session-store.ts';
+import {
+  createSessionStore,
+  createWarningStore,
+  type SessionStore,
+  type WarningStore,
+} from './session-store.ts';
 
 const SEVERE = '型定義は不可欠である。';
 const ANOTHER_SEVERE = '多角的な検討を行う。';
+const POLITE_SEVERE = '型定義は不可欠です。';
 const WARNING = 'これは非常に速い。';
 const CLEAN = 'この関数は設定ファイルを読み込む。';
+// 「ます」が 3 連続する。文体の混在と体言止めは同時に起こさない
+const REPEATED_ENDING = [
+  'これは設定を読み込みます。',
+  '次に一覧を作ります。',
+  '最後に結果を並べます。',
+].join('\n');
+const REPEATED_ENDING_REPORT = '「ます」で終わる文が 3 連続';
 const SESSION_ID = 'test-session';
 
 // 一時ディレクトリは検査対象から外れているため、テスト用のファイルはここに置けない
 let workspace: string;
 let store: SessionStore;
+let warnings: WarningStore;
 
 beforeEach(async () => {
   workspace = await mkdtemp(join(import.meta.dir, '.test-'));
   store = createSessionStore(join(workspace, 'store'));
+  warnings = createWarningStore(join(workspace, 'store'));
 });
 
 afterEach(async () => {
@@ -30,7 +45,11 @@ async function writeMarkdown(name: string, text: string): Promise<string> {
 }
 
 function write(filePath: string, writtenText: string) {
-  return decideWrite({ filePath, writtenText, sessionId: SESSION_ID }, store);
+  return decideWrite(
+    { filePath, writtenText, sessionId: SESSION_ID },
+    store,
+    warnings,
+  );
 }
 
 describe('書き込み直後の検査', () => {
@@ -104,11 +123,98 @@ describe('書き込み直後の検査', () => {
       const reason = await decideWrite(
         { filePath, writtenText: SEVERE, sessionId: SESSION_ID },
         blocked,
+        warnings,
       ).finally(() => {
         process.stderr.write = original;
       });
 
       expect(reason).toBeUndefined();
+    });
+  });
+
+  describe('繰り返す警告の抑制', () => {
+    test('同じ文書レベルの警告が続けて検出された時、2 回目は報告しないこと', async () => {
+      const filePath = await writeMarkdown('a.md', REPEATED_ENDING);
+      expect(await write(filePath, REPEATED_ENDING)).toContain(
+        REPEATED_ENDING_REPORT,
+      );
+
+      const reason = await write(filePath, REPEATED_ENDING);
+
+      expect(reason).toBeUndefined();
+    });
+
+    test('重大な指摘がある時、2 回目以降も報告すること', async () => {
+      const body = [REPEATED_ENDING, POLITE_SEVERE].join('\n');
+      const filePath = await writeMarkdown('a.md', body);
+      await write(filePath, body);
+
+      const reason = await write(filePath, body);
+
+      expect(reason).toContain(`[error] ${POLITE_SEVERE}`);
+      expect(reason).not.toContain(REPEATED_ENDING_REPORT);
+    });
+
+    test('対象文が書き換わって別の警告になった時、報告すること', async () => {
+      const filePath = await writeMarkdown('a.md', REPEATED_ENDING);
+      await write(filePath, REPEATED_ENDING);
+      const rewritten = [
+        '入力を検証します。',
+        '結果を保存します。',
+        '通知を送ります。',
+      ].join('\n');
+      await Bun.write(filePath, rewritten);
+
+      const reason = await write(filePath, rewritten);
+
+      expect(reason).toContain(REPEATED_ENDING_REPORT);
+    });
+
+    test('一度消えた警告が書き戻されて再び現れた時、報告すること', async () => {
+      const filePath = await writeMarkdown('a.md', REPEATED_ENDING);
+      await write(filePath, REPEATED_ENDING);
+      const broken = REPEATED_ENDING.replace(
+        '次に一覧を作ります。',
+        '次に一覧を作りました。',
+      );
+      await Bun.write(filePath, broken);
+      expect(await write(filePath, broken)).toBeUndefined();
+      await Bun.write(filePath, REPEATED_ENDING);
+
+      const reason = await write(filePath, REPEATED_ENDING);
+
+      expect(reason).toContain(REPEATED_ENDING_REPORT);
+    });
+
+    test('語レベルの警告は、書いた範囲に含まれるたびに報告すること', async () => {
+      const filePath = await writeMarkdown('a.md', WARNING);
+      await write(filePath, WARNING);
+
+      const reason = await write(filePath, WARNING);
+
+      expect(reason).toContain('非常に');
+    });
+
+    test('別のファイルの警告は互いの抑制に影響しないこと', async () => {
+      const first = await writeMarkdown('a.md', REPEATED_ENDING);
+      const second = await writeMarkdown('b.md', REPEATED_ENDING);
+      await write(first, REPEATED_ENDING);
+
+      const reason = await write(second, REPEATED_ENDING);
+
+      expect(reason).toContain(REPEATED_ENDING_REPORT);
+    });
+
+    test('警告を抑制しても、重大な指摘の記録は残ること', async () => {
+      const body = [REPEATED_ENDING, POLITE_SEVERE].join('\n');
+      const filePath = await writeMarkdown('a.md', body);
+      await write(filePath, body);
+
+      await write(filePath, body);
+
+      expect(await store.read(SESSION_ID)).toEqual([
+        { filePath, sentences: [POLITE_SEVERE] },
+      ]);
     });
   });
 

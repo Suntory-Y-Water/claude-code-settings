@@ -7,18 +7,36 @@ export interface StoredEntry {
   sentences: string[];
 }
 
+export interface WarningEntry {
+  filePath: string;
+  keys: string[];
+}
+
 export interface SessionStore {
   read(sessionId: string): Promise<StoredEntry[]>;
   write(sessionId: string, entries: StoredEntry[]): Promise<void>;
   prune(): Promise<void>;
 }
 
+export interface WarningStore {
+  read(sessionId: string): Promise<WarningEntry[]>;
+  write(sessionId: string, entries: WarningEntry[]): Promise<void>;
+}
+
 const MAX_SENTENCES_PER_FILE = 20;
 const PRUNE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function createSessionStore(root: string): SessionStore {
+interface JsonStore<Entry> {
+  read(sessionId: string): Promise<Entry[]>;
+  write(sessionId: string, entries: Entry[]): Promise<void>;
+}
+
+function createJsonStore<Entry>(
+  root: string,
+  suffix: string,
+): JsonStore<Entry> {
   const storePath = (sessionId: string): string =>
-    join(root, `${sessionId.replaceAll('/', '-')}.json`);
+    join(root, `${sessionId.replaceAll('/', '-')}${suffix}`);
 
   return {
     async read(sessionId) {
@@ -28,7 +46,7 @@ export function createSessionStore(root: string): SessionStore {
       }
       try {
         const parsed: unknown = await file.json();
-        return Array.isArray(parsed) ? (parsed as StoredEntry[]) : [];
+        return Array.isArray(parsed) ? (parsed as Entry[]) : [];
       } catch {
         return [];
       }
@@ -37,6 +55,12 @@ export function createSessionStore(root: string): SessionStore {
     async write(sessionId, entries) {
       await Bun.write(storePath(sessionId), JSON.stringify(entries));
     },
+  };
+}
+
+export function createSessionStore(root: string): SessionStore {
+  return {
+    ...createJsonStore<StoredEntry>(root, '.json'),
 
     async prune() {
       let names: string[];
@@ -62,11 +86,17 @@ export function createSessionStore(root: string): SessionStore {
   };
 }
 
+export function createWarningStore(root: string): WarningStore {
+  return createJsonStore<WarningEntry>(root, '.warnings.json');
+}
+
 // プロセスを起動するテストから保存先を差し替えるために環境変数を見る
-export const sessionStore = createSessionStore(
+const storeRoot =
   process.env.STYLE_CHECK_STORE_ROOT ??
-    join(homedir(), '.claude', 'style-check'),
-);
+  join(homedir(), '.claude', 'style-check');
+
+export const sessionStore = createSessionStore(storeRoot);
+export const warningStore = createWarningStore(storeRoot);
 
 export function mergeEntry(
   entries: StoredEntry[],
@@ -83,4 +113,13 @@ export function mergeEntry(
       ? { filePath, sentences: merged.slice(-MAX_SENTENCES_PER_FILE) }
       : entry,
   );
+}
+
+export function replaceKeys(
+  entries: WarningEntry[],
+  filePath: string,
+  keys: string[],
+): WarningEntry[] {
+  const others = entries.filter((entry) => entry.filePath !== filePath);
+  return keys.length === 0 ? others : [...others, { filePath, keys }];
 }

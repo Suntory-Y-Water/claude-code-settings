@@ -247,3 +247,7 @@ export function documentRule<Id extends DocumentRuleId>(
 ): DocumentRule & { id: Id } {
   return { id, ...documentRules[id] };
 }
+
+export function isDocumentRuleId(id: RuleId): id is DocumentRuleId {
+  return id in documentRules;
+}

@@ -1,12 +1,16 @@
 import { extname } from 'node:path';
 import { runStyleCheck, severeViolations } from './check.ts';
 import { formatReport, formatStopReport } from './report.ts';
+import { isDocumentRuleId, type Violation } from './rules.ts';
 import { toSentences } from './sanitize.ts';
 import {
   mergeEntry,
+  replaceKeys,
   type SessionStore,
   type StoredEntry,
   sessionStore,
+  type WarningStore,
+  warningStore,
 } from './session-store.ts';
 
 const TARGET_EXTENSION = '.md';
@@ -32,9 +36,45 @@ export interface StopInput {
   stopHookActive: boolean;
 }
 
+// 語レベルと違い文書レベルの判定はファイル全体を見るため、無関係な箇所を
+// 編集しても同じ指摘が当たり続ける。error は Stop hook で追うので対象外
+function suppressible(violation: Violation): boolean {
+  return violation.severity === 'warning' && isDocumentRuleId(violation.ruleId);
+}
+
+// 件数を含む matched は文を足すたび変わる。対象文が変われば sentence も変わる
+function warningKey(violation: Violation): string {
+  return `${violation.ruleId}\n${violation.sentence}`;
+}
+
+// 記録は追記せず今回の検出結果で置き換える。書き直して消えた指摘が
+// 元に戻された時、もう一度報告するため
+async function dropReported(
+  input: WriteInput,
+  violations: Violation[],
+  warnings: WarningStore,
+): Promise<Violation[]> {
+  const entries = await warnings.read(input.sessionId);
+  const reported = new Set(
+    entries.find((entry) => entry.filePath === input.filePath)?.keys ?? [],
+  );
+  const keys = [...new Set(violations.filter(suppressible).map(warningKey))];
+  if (keys.length !== reported.size || keys.some((key) => !reported.has(key))) {
+    await warnings.write(
+      input.sessionId,
+      replaceKeys(entries, input.filePath, keys),
+    );
+  }
+  return violations.filter(
+    (violation) =>
+      !suppressible(violation) || !reported.has(warningKey(violation)),
+  );
+}
+
 async function inspectWrite(
   input: WriteInput,
   store: SessionStore,
+  warnings: WarningStore,
 ): Promise<string | undefined> {
   if (extname(input.filePath).toLowerCase() !== TARGET_EXTENSION) {
     return undefined;
@@ -53,11 +93,12 @@ async function inspectWrite(
     source: await file.text(),
     writtenText: input.writtenText,
   });
-  if (violations.length === 0) {
+  const shown = await dropReported(input, violations, warnings);
+  if (shown.length === 0) {
     return undefined;
   }
 
-  const severe = severeViolations(violations);
+  const severe = severeViolations(shown);
   if (severe.length > 0) {
     await store.prune();
     const entries = mergeEntry(
@@ -67,7 +108,7 @@ async function inspectWrite(
     );
     await store.write(input.sessionId, entries);
   }
-  return formatReport(input.filePath, violations);
+  return formatReport(input.filePath, shown);
 }
 
 // PostToolUse で記録した該当文がまだファイルに残っているかだけを見る。
@@ -128,8 +169,9 @@ async function quiet(
 export function decideWrite(
   input: WriteInput,
   store: SessionStore = sessionStore,
+  warnings: WarningStore = warningStore,
 ): Promise<string | undefined> {
-  return quiet('style-check', () => inspectWrite(input, store));
+  return quiet('style-check', () => inspectWrite(input, store, warnings));
 }
 
 export function decideStop(
