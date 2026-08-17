@@ -66,6 +66,85 @@ function setupToc(): boolean {
   return true;
 }
 
+interface PanelPrefs {
+  toc: boolean;
+  comments: boolean;
+}
+
+const PANEL_PREFS_KEY = 'md-to-html:panels';
+
+function loadPanelPrefs(): PanelPrefs {
+  try {
+    const raw = localStorage.getItem(PANEL_PREFS_KEY);
+    if (raw === null) {
+      return { toc: true, comments: true };
+    }
+    const parsed = JSON.parse(raw) as Partial<PanelPrefs>;
+    return { toc: parsed.toc !== false, comments: parsed.comments !== false };
+  } catch {
+    // file: で開いた場合やストレージ拒否設定では localStorage が例外を投げる
+    return { toc: true, comments: true };
+  }
+}
+
+function savePanelPrefs(prefs: PanelPrefs): void {
+  try {
+    localStorage.setItem(PANEL_PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // 保存できない環境では開閉状態を覚えないだけで、操作自体は続けられる
+  }
+}
+
+function applyPanel(
+  key: 'toc' | 'comments',
+  toggle: HTMLElement | null,
+  usable: boolean,
+  open: boolean,
+): void {
+  const shown = usable && open;
+  // 本文の幅とパネルの表示は CSS 側がこの属性を見て決める
+  document.body.dataset[key] = shown ? 'open' : 'closed';
+  if (toggle) {
+    toggle.hidden = !usable;
+    toggle.setAttribute('aria-expanded', String(shown));
+  }
+}
+
+// 戻り値は差分表示への切り替えを伝える関数
+function setupPanels(tocAvailable: boolean): (showDiff: boolean) => void {
+  const tocToggle = document.getElementById('toc-toggle');
+  const commentToggle = document.getElementById('comment-toggle');
+  const prefs = loadPanelPrefs();
+  let diffMode = false;
+
+  const apply = (): void => {
+    // 差分表示中はサイドパネルが変更箇所の一覧に変わり、
+    // コメントは本文の位置に紐づくため出せない
+    applyPanel('toc', tocToggle, diffMode || tocAvailable, prefs.toc);
+    applyPanel('comments', commentToggle, !diffMode, prefs.comments);
+    if (tocToggle) {
+      tocToggle.textContent = diffMode ? '☰ 変更箇所' : '☰ 目次';
+    }
+  };
+
+  tocToggle?.addEventListener('click', () => {
+    prefs.toc = !prefs.toc;
+    savePanelPrefs(prefs);
+    apply();
+  });
+  commentToggle?.addEventListener('click', () => {
+    prefs.comments = !prefs.comments;
+    savePanelPrefs(prefs);
+    apply();
+  });
+
+  apply();
+  return (showDiff: boolean): void => {
+    diffMode = showDiff;
+    apply();
+  };
+}
+
 // htmldiff は ins/del をインラインに散らすため、ブロック要素単位に
 // まとめて「変更箇所」として一覧化する
 const DIFF_BLOCK_SELECTOR =
@@ -124,13 +203,15 @@ function setupDiffNav(): void {
   nav.append(list);
 }
 
-function setupDiffToggle(tocAvailable: boolean): void {
+function setupDiffToggle(
+  tocAvailable: boolean,
+  setDiffMode: (showDiff: boolean) => void,
+): void {
   const diff = document.getElementById('diff');
   const contentBtn = document.getElementById('view-content-btn');
   const diffBtn = document.getElementById('view-diff-btn');
   const toc = document.getElementById('toc');
   const diffNav = document.getElementById('diff-nav');
-  const commentPanel = document.getElementById('comment-panel');
   if (!diff || !contentBtn || !diffBtn || !content) {
     return;
   }
@@ -143,10 +224,7 @@ function setupDiffToggle(tocAvailable: boolean): void {
     if (diffNav) {
       diffNav.hidden = !showDiff;
     }
-    // コメントは本文(#content)のテキスト位置に紐づくため差分表示中は隠す
-    if (commentPanel) {
-      commentPanel.hidden = showDiff;
-    }
+    setDiffMode(showDiff);
     diffBtn.classList.toggle('active', showDiff);
     contentBtn.classList.toggle('active', !showDiff);
   };
@@ -670,13 +748,8 @@ function setupSelectionUi(): void {
 
 const tocAvailable = setupToc();
 setupDiffNav();
-setupDiffToggle(tocAvailable);
-{
-  const sidePanel = document.getElementById('side-panel');
-  if (sidePanel && !tocAvailable && document.getElementById('diff') === null) {
-    sidePanel.hidden = true;
-  }
-}
+const setDiffMode = setupPanels(tocAvailable);
+setupDiffToggle(tocAvailable, setDiffMode);
 if (location.protocol === 'file:') {
   const features =
     mermaidBlocks().length > 0

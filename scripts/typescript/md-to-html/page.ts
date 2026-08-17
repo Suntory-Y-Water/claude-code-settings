@@ -59,20 +59,35 @@ body {
 }
 html { scroll-behavior: smooth; }
 #layout {
-  display: grid;
-  /* 本文 560px は 16px + 字間 0.02em で全角約34字。WCAG 1.4.8 の上限 40 字を下回る */
-  grid-template-columns: 200px minmax(0, 560px) 320px;
+  display: flex;
+  align-items: flex-start;
   gap: 2.5rem;
-  max-width: 1160px;
+  max-width: var(--layout-width);
   margin: 0 auto;
   justify-content: center;
 }
-#side-panel { grid-column: 1; grid-row: 1; }
-#content, #diff { grid-column: 2; grid-row: 1; }
-#comment-panel { grid-column: 3; grid-row: 1; }
+#side-panel { flex: 0 0 200px; }
+/* min-width: 0 がないと pre の横スクロールが効かず本文が押し広げられる */
+#content, #diff { flex: 0 1 var(--content-width); min-width: 0; }
+#comment-panel { flex: 0 0 320px; }
+/* 本文 560px は 16px + 字間 0.02em で全角約34字。WCAG 1.4.8 の上限 40 字を下回る。
+   パネルを閉じた分は本文に回すが、上限を大きく超えないよう 720px(全角約44字)で止める。
+   --layout-width は表示中の列と 2.5rem の間隔の合計で、ツールバーの端を本文の端に揃える */
+body { --content-width: 560px; --layout-width: 1160px; }
+body[data-toc="closed"] { --content-width: 640px; --layout-width: 1000px; }
+body[data-comments="closed"] { --content-width: 640px; --layout-width: 880px; }
+body[data-toc="closed"][data-comments="closed"] {
+  --content-width: 720px;
+  --layout-width: 720px;
+}
+body[data-toc="closed"] #side-panel { display: none; }
+body[data-comments="closed"] #comment-panel { display: none; }
 @media (max-width: 1160px) {
-  #layout { grid-template-columns: minmax(0, 1fr); }
-  #content, #diff, #comment-panel, #side-panel { grid-column: 1; grid-row: auto; }
+  /* 縦積みでは列が消えるため、開閉に関わらず幅の上限を戻す。
+     属性セレクタを 2 つ並べるのは、開閉時の指定と詳細度を揃えて後勝ちさせるため */
+  body[data-toc][data-comments] { --layout-width: 1160px; }
+  #layout { flex-direction: column; }
+  #content, #diff, #comment-panel, #side-panel { flex: 1 1 auto; width: 100%; }
   #comment-panel, #side-panel { position: static; max-height: none; }
 }
 h1, h2, h3, h4, h5, h6 {
@@ -148,12 +163,19 @@ li > ul, li > ol { margin: 0.5rem 0 0; }
 li > p { margin-bottom: 0.5rem; }
 li input[type="checkbox"] { margin-right: 0.5rem; }
 
+/* 目次トグルを左端、コメントトグルを右端、本文/差分の切り替えを中央に置く。
+   列を固定するのは、トグルが隠れても残りのボタンが動かないようにするため */
 #view-toolbar {
-  max-width: 1160px;
+  max-width: var(--layout-width);
   margin: 0 auto 2rem;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
   gap: 0.5rem;
 }
+#toc-toggle { grid-column: 1; justify-self: start; }
+#view-switch { grid-column: 2; justify-self: center; display: flex; gap: 0.5rem; }
+#comment-toggle { grid-column: 3; justify-self: end; }
 #view-toolbar button {
   /* DADS Medium ボタンの最小サイズ */
   min-width: 96px;
@@ -171,6 +193,7 @@ li input[type="checkbox"] { margin-right: 0.5rem; }
   background: var(--code-bg);
   font-weight: 700;
 }
+#view-toolbar button[aria-expanded="true"] { background: var(--code-bg); }
 
 #diff ins { background: var(--ins-bg); text-decoration: none; }
 #diff del { background: var(--del-bg); }
@@ -364,12 +387,17 @@ mark.annotation-mark.selected { background: var(--mark-selected); }
 `;
 
 export function renderPage(input: PageInput): string {
-  const toolbar =
+  const viewSwitch =
     input.diffHtml === undefined
       ? ''
-      : `<nav id="view-toolbar">
+      : `<div id="view-switch">
 <button type="button" id="view-content-btn" class="active">本文</button>
 <button type="button" id="view-diff-btn">前回との差分</button>
+</div>
+`;
+  const toolbar = `<nav id="view-toolbar">
+<button type="button" id="toc-toggle" aria-controls="side-panel" aria-expanded="true">☰ 目次</button>
+${viewSwitch}<button type="button" id="comment-toggle" aria-controls="comment-panel" aria-expanded="true">💬 コメント</button>
 </nav>`;
   const diffSection =
     input.diffHtml === undefined
