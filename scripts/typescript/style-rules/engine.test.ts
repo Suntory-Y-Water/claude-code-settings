@@ -40,6 +40,9 @@ const hitCases = {
     '少し冷静になって考えると、原因は設定である。',
     '少し冷静になって考えると',
   ],
+  'jargon-projection': ['同期処理の射影も合わせる。', '射影'],
+  'jargon-window': ['設定が食い違う窓が生まれる。', '窓'],
+  'jargon-skip': ['この手順を飛ばすと表示が壊れる。', '飛ばす'],
 } as const satisfies Record<WordRuleId, readonly [string, string]>;
 
 const hitRows: [string, string, string][] = Object.entries(hitCases).map(
@@ -55,6 +58,9 @@ const missCases: [WordRuleId, string][] = [
   ['connective-additive', 'これはまた、別の話である。'],
   ['jargon-technique', 'これは便利なテクニックである。'],
   ['dismissive', 'カスタム設定を使う。'],
+  ['jargon-window', '問い合わせ窓口に連絡する。'],
+  ['jargon-window', '窓ガラスの寸法を測る。'],
+  ['jargon-skip', '鳥が空を飛んでいる。'],
 ];
 
 describe('語のルール', () => {

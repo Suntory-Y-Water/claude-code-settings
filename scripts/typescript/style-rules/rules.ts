@@ -151,6 +151,27 @@ export const wordRules = [
     pattern: /少し冷静になって考えると/u,
     good: '前置きを削って結論から書く',
   },
+  {
+    id: 'jargon-projection',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /射影/u,
+    good: 'データに何をしたかをそのまま書く。例:「jq がフィールドを絞り込んでいる」「不要な列を取り除く」。数学・グラフィックスの用語(正射影、射影変換など)は残してよい',
+  },
+  {
+    id: 'jargon-window',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /窓(?![口際辺枠]|ガラス)/u,
+    good: '時間帯・期間・状態をそのまま書く。例:「設定とコードが食い違っている時間帯」「再ビルドが完了するまでの数分間」。建築や UI の実物の窓は残してよい',
+  },
+  {
+    id: 'jargon-skip',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /飛ば[さしすせそ]/u,
+    good: '省略・中断・不実行をそのまま書く。例:「実行しない」「省略する」「途中で終える」。物を空中へ移動させる意味(ボールを飛ばす)は残してよい',
+  },
 ] as const satisfies readonly WordRule[];
 
 export const documentRules = {
