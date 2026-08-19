@@ -70,22 +70,20 @@ html { scroll-behavior: smooth; }
 /* min-width: 0 がないと pre の横スクロールが効かず本文が押し広げられる */
 #content, #diff { flex: 0 1 var(--content-width); min-width: 0; }
 #comment-panel { flex: 0 0 320px; }
-/* 本文 560px は 16px + 字間 0.02em で全角約34字。WCAG 1.4.8 の上限 40 字を下回る。
-   パネルを閉じた分は本文に回すが、上限を大きく超えないよう 720px(全角約44字)で止める。
+/* 本文 1080px は WCAG 1.4.8 の 1 行 40 字を超えるが、表やコードブロックが本文幅に
+   収まらず縦に潰れる方を避けて広い側を取る。画面が狭いときは flex-shrink で縮む。
    --layout-width は表示中の列と 2.5rem の間隔の合計で、ツールバーの端を本文の端に揃える */
-body { --content-width: 560px; --layout-width: 1160px; }
-body[data-toc="closed"] { --content-width: 640px; --layout-width: 1000px; }
-body[data-comments="closed"] { --content-width: 640px; --layout-width: 880px; }
-body[data-toc="closed"][data-comments="closed"] {
-  --content-width: 720px;
-  --layout-width: 720px;
-}
+body { --content-width: 1080px; --layout-width: 1680px; }
+body[data-toc="closed"] { --layout-width: 1440px; }
+body[data-comments="closed"] { --layout-width: 1320px; }
+body[data-toc="closed"][data-comments="closed"] { --layout-width: 1080px; }
 body[data-toc="closed"] #side-panel { display: none; }
 body[data-comments="closed"] #comment-panel { display: none; }
-@media (max-width: 1160px) {
+/* 1280px を切ると 3 列では本文が 640px を下回るため、そこから下は縦積みにする */
+@media (max-width: 1280px) {
   /* 縦積みでは列が消えるため、開閉に関わらず幅の上限を戻す。
      属性セレクタを 2 つ並べるのは、開閉時の指定と詳細度を揃えて後勝ちさせるため */
-  body[data-toc][data-comments] { --layout-width: 1160px; }
+  body[data-toc][data-comments] { --layout-width: 1080px; }
   #layout { flex-direction: column; }
   #content, #diff, #comment-panel, #side-panel { flex: 1 1 auto; width: 100%; }
   #comment-panel, #side-panel { position: static; max-height: none; }
@@ -152,8 +150,16 @@ blockquote {
   color: var(--quote);
   border-left: 4px solid var(--border-strong);
 }
-table { border-collapse: collapse; display: block; overflow-x: auto; margin: 0 0 2rem; }
-th, td { border: 1px solid var(--border-strong); padding: 0.75rem 1rem; }
+/* display: block では表が本文の幅を基準にできず、列が潰れて縦に間延びするか
+   横スクロールになる。table のまま広げて列幅をブラウザに配分させる。
+   14px にするのは、列数が多い表でも本文幅に収めるため */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 2rem;
+  font-size: 0.875rem;
+}
+th, td { border: 1px solid var(--border-strong); padding: 0.75rem 1rem; vertical-align: top; }
 th { background: var(--code-bg); font-weight: 700; text-align: left; }
 img { max-width: 100%; height: auto; }
 hr { border: 0; border-top: 1px solid var(--border-strong); margin: 3rem 0; }
