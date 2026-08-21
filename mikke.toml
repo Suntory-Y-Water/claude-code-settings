@@ -1,0 +1,10 @@
+[scan]
+include = ["subagent-log"]
+
+[index]
+path = ".mikke/index.sqlite"
+embeddings_dir = ".mikke/embeddings"
+auto_rebuild = true
+
+[semantic]
+enabled = true

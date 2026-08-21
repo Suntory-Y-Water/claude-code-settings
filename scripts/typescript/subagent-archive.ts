@@ -1,4 +1,5 @@
 #!/usr/bin/env -S bun run --silent
+import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
@@ -183,6 +184,32 @@ function extractLastAssistantText(entries: SDKMessage[]): string | undefined {
   return undefined;
 }
 
+const BACKFILL_SCRIPT = join(
+  homedir(),
+  '.claude',
+  'scripts',
+  'mikke',
+  'backfill-frontmatter.py',
+);
+
+// mikke の検索は frontmatter の date / tags / summary に依存する。生成規則を
+// backfill スクリプト側の 1 箇所に寄せたいので、ここでは呼び出すだけにする。
+// 失敗してもログ本体は書けているので、警告だけ出して握り潰す。
+function addFrontmatter(logPath: string): void {
+  const result = spawnSync(
+    'python3',
+    [BACKFILL_SCRIPT, '--apply', '--file', logPath],
+    {
+      encoding: 'utf-8',
+    },
+  );
+  if (result.error || result.status !== 0) {
+    process.stderr.write(
+      `[subagent-archive] frontmatter 付与に失敗: ${result.error?.message ?? result.stderr ?? `exit ${result.status}`}\n`,
+    );
+  }
+}
+
 const hook = defineHook({
   trigger: {
     SubagentStop: true,
@@ -247,6 +274,7 @@ const hook = defineHook({
       const body = [`# ${headline}`, '', response.trim(), ''].join('\n');
 
       writeFileSync(outPath, body, 'utf-8');
+      addFrontmatter(outPath);
       return context.success();
     } catch (err) {
       process.stderr.write(
