@@ -1,6 +1,4 @@
 #!/bin/sh
-# subagent-log を必ず対象にして mikke を実行する。
-# 素の `mikke` は cwd から上方探索するため、別プロジェクト内で実行すると
-# そのリポジトリを走査して .mikke/ を作ってしまう。
+# subagent-log を必ず対象にし、検索結果をどの cwd からも開ける絶対パスにする。
 set -eu
-exec mikke --root "${MIKKE_LOG_ROOT:-$HOME/.claude}" "$@"
+exec bun run -i --silent "$HOME/.claude/scripts/mikke/mikke-log.ts" "$@"

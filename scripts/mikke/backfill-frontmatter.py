@@ -17,7 +17,6 @@ DEFAULT_ROOT = Path.home() / ".claude" / "subagent-log"
 FRONTMATTER_KEYS = ("date", "updated", "tags", "summary")
 SUMMARY_MAX_CHARS = 120
 DATE_IN_NAME = re.compile(r"^(\d{4}-\d{2}-\d{2})_")
-USER_PREFIX = re.compile(r"^-Users-[^-]+-")
 FENCE = re.compile(r"^\s*(```|~~~)")
 SKIP_LINE = re.compile(r"^\s*(#{1,6}\s|>|\||-{3,}\s*$|\*{3,}\s*$|<)")
 LIST_MARKER = re.compile(r"^\s*([-*+]|\d+[.)])\s+")
@@ -71,9 +70,7 @@ def yaml_quote(text: str) -> str:
 
 
 def project_tag(dir_name: str) -> str:
-    name = USER_PREFIX.sub("", dir_name)
-    name = re.sub(r"^dev-", "", name)
-    return name.lstrip(".") or "unknown"
+    return dir_name.lstrip(".") or "unknown"
 
 
 def note_date(path: Path) -> str:
@@ -92,26 +89,32 @@ def split_frontmatter(text: str) -> tuple[list[str], str]:
     return text[4:end].splitlines(), text[end + 5 :].lstrip("\n")
 
 
-def derived_values(path: Path, root: Path, body: str) -> dict[str, str]:
+def derived_values(
+    path: Path, root: Path, body: str, tag_override: str | None = None
+) -> dict[str, str]:
     parts = path.relative_to(root).parts
     values = {
         "date": note_date(path),
         "updated": date.fromtimestamp(path.stat().st_mtime).isoformat(),
     }
-    if len(parts) > 1:
-        values["tags"] = "[" + project_tag(parts[0]) + "]"
+    if tag_override:
+        values["tags"] = "[" + yaml_quote(tag_override) + "]"
+    elif len(parts) > 1:
+        # 新規ログの保存先は環境非依存の project tag ディレクトリ。
+        # hook 経由では --tag も明示するため、この分岐は一括補完用。
+        values["tags"] = "[" + yaml_quote(project_tag(parts[0])) + "]"
     summary = extract_summary(body)
     if summary:
         values["summary"] = yaml_quote(summary)
     return values
 
 
-def merge(path: Path, root: Path) -> str | None:
+def merge(path: Path, root: Path, tag_override: str | None = None) -> str | None:
     """欠けている frontmatter キーを補った全文を返す。補うものが無ければ None。"""
     text = path.read_text(encoding="utf-8")
     fm_lines, body = split_frontmatter(text)
     present = {line.split(":", 1)[0].strip() for line in fm_lines if ":" in line}
-    values = derived_values(path, root, body)
+    values = derived_values(path, root, body, tag_override)
 
     missing = [k for k in FRONTMATTER_KEYS if k in values and k not in present]
     if not missing:
@@ -125,6 +128,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     ap.add_argument("--file", type=Path, help="1 ファイルだけ処理する (hook 用)")
+    ap.add_argument("--tag", help="--file で生成する frontmatter の project tag")
     ap.add_argument("--apply", action="store_true", help="指定しない限り dry-run")
     args = ap.parse_args()
 
@@ -144,7 +148,7 @@ def main() -> int:
 
     updated = skipped = 0
     for path in targets:
-        merged = merge(path, root)
+        merged = merge(path, root, args.tag)
         if merged is None:
             skipped += 1
             continue

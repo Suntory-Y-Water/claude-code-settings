@@ -6,5 +6,9 @@ path = ".mikke/index.sqlite"
 embeddings_dir = ".mikke/embeddings"
 auto_rebuild = true
 
+[search]
+# --project は mikke の JSON 結果をタグで後段フィルタするため、全候補を取得する。
+bm25_limit = 10000
+
 [semantic]
 enabled = true

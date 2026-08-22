@@ -1,19 +1,16 @@
 #!/usr/bin/env -S bun run --silent
 import { spawnSync } from 'node:child_process';
-import { homedir } from 'node:os';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { BetaToolUseBlock } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { defineHook, runHook } from 'cc-hooks-ts';
 import { basename, dirname, join } from 'pathe';
+import { projectTag } from '../mikke/project-tag';
 
 const LOG_ROOT = join(homedir(), '.claude', 'subagent-log');
 const TARGET_AGENT_TYPES = new Set(['Explore', 'general-purpose']);
 const SLUG_MAX_LEN = 60;
-
-function normalizeProjectDir(projectDir: string): string {
-  return projectDir.replace(/\//g, '-');
-}
 
 function sanitize(text: string): string {
   let normalized = text.trim();
@@ -195,10 +192,10 @@ const BACKFILL_SCRIPT = join(
 // mikke の検索は frontmatter の date / tags / summary に依存する。生成規則を
 // backfill スクリプト側の 1 箇所に寄せたいので、ここでは呼び出すだけにする。
 // 失敗してもログ本体は書けているので、警告だけ出して握り潰す。
-function addFrontmatter(logPath: string): void {
+function addFrontmatter(logPath: string, tag: string): void {
   const result = spawnSync(
     'python3',
-    [BACKFILL_SCRIPT, '--apply', '--file', logPath],
+    [BACKFILL_SCRIPT, '--apply', '--file', logPath, '--tag', tag],
     {
       encoding: 'utf-8',
     },
@@ -263,7 +260,8 @@ const hook = defineHook({
         return context.success();
       }
 
-      const logDir = join(LOG_ROOT, normalizeProjectDir(projectDir));
+      const tag = projectTag(projectDir);
+      const logDir = join(LOG_ROOT, tag);
       if (!existsSync(logDir)) {
         mkdirSync(logDir, { recursive: true });
       }
@@ -274,7 +272,7 @@ const hook = defineHook({
       const body = [`# ${headline}`, '', response.trim(), ''].join('\n');
 
       writeFileSync(outPath, body, 'utf-8');
-      addFrontmatter(outPath);
+      addFrontmatter(outPath, tag);
       return context.success();
     } catch (err) {
       process.stderr.write(
