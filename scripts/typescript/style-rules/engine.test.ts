@@ -43,6 +43,8 @@ const hitCases = {
   'jargon-projection': ['同期処理の射影も合わせる。', '射影'],
   'jargon-window': ['設定が食い違う窓が生まれる。', '窓'],
   'jargon-skip': ['この手順を飛ばすと表示が壊れる。', '飛ばす'],
+  'jargon-lottery': ['更新のたびに引き直すくじなので、いずれ引く。', 'くじ'],
+  'jargon-burn': ['ループ1回で240秒を焼く。', '焼く'],
 } as const satisfies Record<WordRuleId, readonly [string, string]>;
 
 const hitRows: [string, string, string][] = Object.entries(hitCases).map(
@@ -61,6 +63,16 @@ const missCases: [WordRuleId, string][] = [
   ['jargon-window', '問い合わせ窓口に連絡する。'],
   ['jargon-window', '窓ガラスの寸法を測る。'],
   ['jargon-skip', '鳥が空を飛んでいる。'],
+  ['jargon-lottery', 'くじらの回遊経路を記録する。'],
+  ['jargon-lottery', '足首をくじいて歩けなくなった。'],
+  ['jargon-lottery', '心がくじけそうになる。'],
+  ['jargon-burn', 'CD を焼く。'],
+  ['jargon-burn', 'ROM に焼く。'],
+  ['jargon-burn', '画像を焼く。'],
+  ['jargon-burn', '日に焼ける。'],
+  ['jargon-burn', '設定をイメージに焼き込む。'],
+  ['jargon-burn', 'プロセスに焼き付いた環境変数が残る。'],
+  ['jargon-burn', 'キャッシュに型が焼かれる。'],
 ];
 
 describe('語のルール', () => {
@@ -78,6 +90,15 @@ describe('語のルール', () => {
     const violations = await check(sentence);
 
     expect(ofRule(violations, ruleId)).toEqual([]);
+  });
+
+  test('罠と同じ扱いの語も同じルールで検出されること', async () => {
+    const violations = await check('そのバッチに地雷が入っていた。');
+
+    expect(violations[0]).toMatchObject({
+      ruleId: 'jargon-trap',
+      matched: '地雷',
+    });
   });
 
   test('コーパス校正で対象から外した語は検出されないこと', async () => {

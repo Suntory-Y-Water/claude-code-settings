@@ -137,7 +137,7 @@ export const wordRules = [
     id: 'jargon-trap',
     category: '過去の指摘',
     severity: 'warning',
-    pattern: /罠/u,
+    pattern: /罠|地雷/u,
     good: '何が起きるかをそのまま書く。例:「この設定では stdout が Claude に届かない」',
   },
   {
@@ -181,6 +181,23 @@ export const wordRules = [
     severity: 'warning',
     pattern: /飛ば[さしすせそ]/u,
     good: '省略・中断・不実行をそのまま書く。例:「実行しない」「省略する」「途中で終える」。物を空中へ移動させる意味(ボールを飛ばす)は残してよい',
+  },
+  {
+    id: 'jargon-lottery',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /くじ(?![らかきくけい])/u,
+    good: '確率と回数をそのまま書く。例:「実行のたびに 1.5% の確率で失敗する」「回数を重ねればいずれ失敗する」。実際の抽選・抽選機能について書く場合は残してよい',
+  },
+  {
+    // 「焼き込む」「焼き付く」「焼き直す」は埋め込みの意味で定着しており指摘の対象外。
+    // 記録媒体への書き込みと調理は後読みで外す
+    id: 'jargon-burn',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?<!(?:CD|DVD|BD|ROM|ディスク|イメージ|画像|写真|パン|肉|魚|芋) ?[をに] ?)焼(?:く|き(?![込付直上])|い[てた]|か(?![れ]))/u,
+    good: '何をどれだけ消費するかをそのまま書く。例:「240 秒を消費する」「上限までトークンを使い切る」。記録媒体への書き込み、調理、日焼けは残してよい',
   },
 ] as const satisfies readonly WordRule[];
 
