@@ -6,7 +6,6 @@
     "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
     "CLAUDE_CODE_NEW_INIT": "1",
     "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL": "1",
-    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "CLAUDE_AFK_TIMEOUT_MS": "86400000"
@@ -106,6 +105,26 @@
             "command": "rtk hook claude"
           }
         ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/notify-input-needed.ts"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/notify-input-needed.ts"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -113,7 +132,36 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/notify-turn-end.ts",
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "bun run -i --silent ~/.claude/scripts/typescript/style-check-stop.ts"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/mikke-embed.ts",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "Explore|general-purpose",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/subagent-research-context.ts"
           }
         ]
       }
@@ -165,5 +213,6 @@
       "$defaults"
     ]
   },
-  "leftArrowOpensAgents": false
+  "leftArrowOpensAgents": false,
+  "outputStyle": "Concise"
 }
