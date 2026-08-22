@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { mkdtemp, rm, utimes } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { micromark } from 'micromark';
 import { gfm, gfmHtml } from 'micromark-extension-gfm';
-import { brokenByEdit, renderBodyDiff } from './md-to-html.ts';
+import { bashTargets, brokenByEdit, renderBodyDiff } from './md-to-html.ts';
 import type { Annotation } from './md-to-html/shared.ts';
 
 function toHtml(body: string): string {
@@ -133,5 +136,66 @@ describe('視覚差分の生成', () => {
     expect(result?.match(/<del[^>]*>(.*?)<\/del>/)?.[1]).toContain(
       'REMOVEDWORD',
     );
+  });
+});
+
+describe('Bash コマンドから変換対象を選ぶ', () => {
+  let workDir: string;
+
+  beforeAll(async () => {
+    workDir = await mkdtemp(join(tmpdir(), 'md-to-html-bash-'));
+    await Bun.write(join(workDir, 'written.md'), '# 書き換えたファイル\n');
+    await Bun.write(join(workDir, 'untouched.md'), '# 触っていないファイル\n');
+    // このコマンドで書かれていないファイルは、更新時刻が古いままになる
+    const longAgo = new Date(Date.now() - 60 * 60 * 1000);
+    await utimes(join(workDir, 'untouched.md'), longAgo, longAgo);
+  });
+
+  afterAll(async () => {
+    await rm(workDir, { recursive: true, force: true });
+  });
+
+  it('書き込み位置に現れ、実際に更新されていたファイルが対象になること', async () => {
+    const command = `sed -i '' 's/旧/新/' written.md`;
+
+    const result = await bashTargets(command, workDir);
+
+    expect(result).toEqual([join(workDir, 'written.md')]);
+  });
+
+  it('書き込み位置に現れても更新されていないファイルは、対象にならないこと', async () => {
+    const command = `sed -i '' 's/旧/新/' untouched.md`;
+
+    const result = await bashTargets(command, workDir);
+
+    expect(result).toEqual([]);
+  });
+
+  it('存在しないファイルは対象にならないこと', async () => {
+    const command = `sed -i '' 's/旧/新/' missing.md`;
+
+    const result = await bashTargets(command, workDir);
+
+    expect(result).toEqual([]);
+  });
+
+  it('1 つのコマンドで複数のファイルが更新されたとき、すべてが対象になること', async () => {
+    await Bun.write(join(workDir, 'second.md'), '# もう 1 つ\n');
+    const command = `sed -i '' 's/旧/新/' written.md second.md untouched.md`;
+
+    const result = await bashTargets(command, workDir);
+
+    expect(result.sort()).toEqual([
+      join(workDir, 'second.md'),
+      join(workDir, 'written.md'),
+    ]);
+  });
+
+  it('読み取りだけのコマンドのとき、対象にならないこと', async () => {
+    const command = 'cat written.md';
+
+    const result = await bashTargets(command, workDir);
+
+    expect(result).toEqual([]);
   });
 });

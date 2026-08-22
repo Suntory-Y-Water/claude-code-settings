@@ -11,6 +11,7 @@ import { defineHook, runHook } from 'cc-hooks-ts';
 import { micromark } from 'micromark';
 import { gfm, gfmHtml } from 'micromark-extension-gfm';
 import { markPending, readBaseline } from './md-to-html/baseline.ts';
+import { collectMarkdownWriteTargets } from './md-to-html/bash-targets.ts';
 import { renderDiffHtml } from './md-to-html/diff.ts';
 import { highlightCodeBlocks } from './md-to-html/highlight.ts';
 import { locateAnnotation } from './md-to-html/locate.ts';
@@ -182,137 +183,188 @@ async function transpileClient(): Promise<string> {
   return new Bun.Transpiler({ loader: 'ts' }).transformSync(source);
 }
 
+interface Conversion {
+  contextText: string;
+  systemMessage: string;
+}
+
+async function convert(filePath: string): Promise<Conversion | undefined> {
+  try {
+    if (extname(filePath).toLowerCase() !== TARGET_EXTENSION) {
+      return undefined;
+    }
+    if (isUnderExcludedDir(filePath) || filePath.startsWith(OUTPUT_ROOT)) {
+      return undefined;
+    }
+    const mdFile = Bun.file(filePath);
+    if (!(await mdFile.exists())) {
+      return undefined;
+    }
+
+    const source = await mdFile.text();
+    const { body, title: frontMatterTitle } = splitFrontMatter(source);
+    const firstLine = body
+      .split('\n')
+      .find((line) => line.trim() !== '')
+      ?.trim();
+    const headingTitle = firstLine?.match(/^#\s+(.+)/)?.[1];
+    if (frontMatterTitle === undefined && headingTitle === undefined) {
+      return undefined;
+    }
+    const trimmedBody = body.trim();
+    if (
+      trimmedBody.length < MIN_BODY_LENGTH &&
+      !trimmedBody.includes(IMAGE_MARKER)
+    ) {
+      return undefined;
+    }
+
+    const rawContentHtml = renderMarkdown(body);
+    // 差分はハイライト前の HTML 同士で取る(色付けの span が差分に混ざるため)
+    const contentHtml = await highlightCodeBlocks(
+      await embedLocalImages(rawContentHtml, dirname(filePath)),
+    );
+    const title =
+      frontMatterTitle ?? headingTitle ?? basename(filePath, TARGET_EXTENSION);
+
+    const outDir = join(OUTPUT_ROOT, dirname(filePath).replaceAll('/', '-'));
+    const outBase = basename(filePath, TARGET_EXTENSION);
+    const outPath = join(outDir, `${outBase}.html`);
+
+    // 前の指示の時点の Markdown と比較して視覚差分を生成する
+    const previousBody = await readBaseline(outPath);
+    const diffHtml = renderBodyDiff(previousBody, body, rawContentHtml);
+
+    const page = renderPage({
+      title,
+      contentHtml,
+      diffHtml,
+      clientJs: await transpileClient(),
+    });
+    // Bun.write は親ディレクトリを自動作成する
+    await Bun.write(outPath, page);
+    await markPending(outPath);
+
+    // 更新時もコメント保存サーバを維持する(ブラウザ側の保存 API が依存)
+    const port = await ensureServer();
+
+    const commentsPath = commentsPathForHtml(outPath);
+    const savedViaServer =
+      port !== undefined && (await saveSourcePath(port, outPath, filePath));
+    if (!savedViaServer) {
+      // サーバが起動できないときだけ直接書く。sourcePath が欠けると注入時に
+      // 対象 Markdown を特定できなくなるので、競合リスクより欠落を避ける
+      const current = await readCommentsFile(commentsPath);
+      current.sourcePath = filePath;
+      await writeCommentsFile(commentsPath, current);
+    }
+    const comments = await readCommentsFile(commentsPath);
+
+    const relPath = docParamForHtml(outPath)
+      .split('/')
+      .map(encodeURIComponent)
+      .join('/');
+    const viewUrl =
+      port === undefined
+        ? Bun.pathToFileURL(outPath).href
+        : `http://localhost:${port}/${relPath}`;
+
+    const contextLines = [
+      `Markdown を HTML に変換しました: ${outPath}`,
+      `閲覧 URL: ${viewUrl}`,
+    ];
+    const unresolved = unresolvedAnnotations(comments);
+    if (unresolved.length > 0) {
+      const broken = brokenByEdit(previousBody, body, unresolved);
+      if (broken.length === 0) {
+        contextLines.push(
+          `未対応コメントが ${unresolved.length} 件あります (内容は次のプロンプトで注入されます)`,
+        );
+      } else {
+        contextLines.push(
+          '',
+          formatBrokenAnchors({
+            commentsPath,
+            sourcePath: filePath,
+            markdown: source,
+            annotations: broken,
+          }),
+        );
+      }
+    }
+    return {
+      contextText: contextLines.join('\n'),
+      systemMessage: `Markdown を HTML に変換しました: ${viewUrl}`,
+    };
+  } catch (err) {
+    process.stderr.write(
+      `[md-to-html] ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return undefined;
+  }
+}
+
+// Bash から拾ったパスは書き込み位置に現れただけで、本当に書かれたとは限らない。
+// スクリプト本文由来の候補には読み取り専用のパスも混ざるため、
+// このコマンドの実行中に更新されたものだけを変換対象にする
+const RECENT_CHANGE_WINDOW_MS = 5 * 60 * 1000;
+
+async function changedRecently(filePath: string): Promise<boolean> {
+  const file = Bun.file(filePath);
+  if (!(await file.exists())) {
+    return false;
+  }
+  return Date.now() - file.lastModified <= RECENT_CHANGE_WINDOW_MS;
+}
+
+export async function bashTargets(
+  command: string,
+  cwd: string,
+): Promise<string[]> {
+  const candidates = collectMarkdownWriteTargets(command, cwd);
+  const changed = await Promise.all(candidates.map(changedRecently));
+  return candidates.filter((_path, index) => changed[index] === true);
+}
+
 const hook = defineHook({
   trigger: {
     PostToolUse: {
       Write: true,
       Edit: true,
+      Bash: true,
     },
   },
 
   run: async (context) => {
-    try {
-      const filePath = context.input.tool_input.file_path;
-      if (extname(filePath).toLowerCase() !== TARGET_EXTENSION) {
-        return context.success();
+    const input = context.input;
+    const filePaths =
+      input.tool_name === 'Bash'
+        ? await bashTargets(input.tool_input.command, input.cwd)
+        : [input.tool_input.file_path];
+    const conversions: Conversion[] = [];
+    for (const filePath of filePaths) {
+      const conversion = await convert(filePath);
+      if (conversion !== undefined) {
+        conversions.push(conversion);
       }
-      if (isUnderExcludedDir(filePath)) {
-        return context.success();
-      }
-      const mdFile = Bun.file(filePath);
-      if (!(await mdFile.exists())) {
-        return context.success();
-      }
-
-      const source = await mdFile.text();
-      const { body, title: frontMatterTitle } = splitFrontMatter(source);
-      const firstLine = body
-        .split('\n')
-        .find((line) => line.trim() !== '')
-        ?.trim();
-      const headingTitle = firstLine?.match(/^#\s+(.+)/)?.[1];
-      if (frontMatterTitle === undefined && headingTitle === undefined) {
-        return context.success();
-      }
-      const trimmedBody = body.trim();
-      if (
-        trimmedBody.length < MIN_BODY_LENGTH &&
-        !trimmedBody.includes(IMAGE_MARKER)
-      ) {
-        return context.success();
-      }
-
-      const rawContentHtml = renderMarkdown(body);
-      // 差分はハイライト前の HTML 同士で取る(色付けの span が差分に混ざるため)
-      const contentHtml = await highlightCodeBlocks(
-        await embedLocalImages(rawContentHtml, dirname(filePath)),
-      );
-      const title =
-        frontMatterTitle ??
-        headingTitle ??
-        basename(filePath, TARGET_EXTENSION);
-
-      const outDir = join(OUTPUT_ROOT, dirname(filePath).replaceAll('/', '-'));
-      const outBase = basename(filePath, TARGET_EXTENSION);
-      const outPath = join(outDir, `${outBase}.html`);
-
-      // 前の指示の時点の Markdown と比較して視覚差分を生成する
-      const previousBody = await readBaseline(outPath);
-      const diffHtml = renderBodyDiff(previousBody, body, rawContentHtml);
-
-      const page = renderPage({
-        title,
-        contentHtml,
-        diffHtml,
-        clientJs: await transpileClient(),
-      });
-      // Bun.write は親ディレクトリを自動作成する
-      await Bun.write(outPath, page);
-      await markPending(outPath);
-
-      // 更新時もコメント保存サーバを維持する(ブラウザ側の保存 API が依存)
-      const port = await ensureServer();
-
-      const commentsPath = commentsPathForHtml(outPath);
-      const savedViaServer =
-        port !== undefined && (await saveSourcePath(port, outPath, filePath));
-      if (!savedViaServer) {
-        // サーバが起動できないときだけ直接書く。sourcePath が欠けると注入時に
-        // 対象 Markdown を特定できなくなるので、競合リスクより欠落を避ける
-        const current = await readCommentsFile(commentsPath);
-        current.sourcePath = filePath;
-        await writeCommentsFile(commentsPath, current);
-      }
-      const comments = await readCommentsFile(commentsPath);
-
-      const relPath = docParamForHtml(outPath)
-        .split('/')
-        .map(encodeURIComponent)
-        .join('/');
-      const viewUrl =
-        port === undefined
-          ? Bun.pathToFileURL(outPath).href
-          : `http://localhost:${port}/${relPath}`;
-
-      const contextLines = [
-        `Markdown を HTML に変換しました: ${outPath}`,
-        `閲覧 URL: ${viewUrl}`,
-      ];
-      const unresolved = unresolvedAnnotations(comments);
-      if (unresolved.length > 0) {
-        const broken = brokenByEdit(previousBody, body, unresolved);
-        if (broken.length === 0) {
-          contextLines.push(
-            `未対応コメントが ${unresolved.length} 件あります (内容は次のプロンプトで注入されます)`,
-          );
-        } else {
-          contextLines.push(
-            '',
-            formatBrokenAnchors({
-              commentsPath,
-              sourcePath: filePath,
-              markdown: source,
-              annotations: broken,
-            }),
-          );
-        }
-      }
-      return context.json({
-        event: 'PostToolUse',
-        output: {
-          hookSpecificOutput: {
-            hookEventName: 'PostToolUse',
-            additionalContext: contextLines.join('\n'),
-          },
-          systemMessage: `Markdown を HTML に変換しました: ${viewUrl}`,
-        },
-      });
-    } catch (err) {
-      process.stderr.write(
-        `[md-to-html] ${err instanceof Error ? err.message : String(err)}\n`,
-      );
+    }
+    if (conversions.length === 0) {
       return context.success();
     }
+    return context.json({
+      event: 'PostToolUse',
+      output: {
+        hookSpecificOutput: {
+          hookEventName: 'PostToolUse',
+          additionalContext: conversions
+            .map((conversion) => conversion.contextText)
+            .join('\n\n'),
+        },
+        systemMessage: conversions
+          .map((conversion) => conversion.systemMessage)
+          .join('\n'),
+      },
+    });
   },
 });
 
