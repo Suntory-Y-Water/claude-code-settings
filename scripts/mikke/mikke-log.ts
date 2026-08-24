@@ -1,4 +1,9 @@
 #!/usr/bin/env bun
+// 呼び出し先の mikke 本体は 0.3.0 (+semantic) を前提にしている。semantic / hybrid は
+// .mikke/embeddings (gitignore 済み) と、HuggingFace から取得する
+// intfloat/multilingual-e5-small の config.json / tokenizer.json を要求するため、
+// それらを用意していないマシンでは「見つからない」系のエラーで落ちる。
+// 用意しない環境では 0.2.0 を入れる。導入手順は README.md の mikke 節を参照。
 import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'pathe';
