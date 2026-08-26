@@ -15,6 +15,12 @@ export interface DocumentRule {
   readonly good: string;
 }
 
+export interface TextlintRule {
+  readonly category: string;
+  readonly severity: Severity;
+  readonly good: string;
+}
+
 // 語彙と閾値の一部は skill natural-japanese の scripts/lint.py の
 // コーパス校正(人間 103 文書 + AI 81 文書)に合わせている。skill は
 // skills-lock.json でハッシュ管理されているため、更新したら lint.py の
@@ -231,6 +237,38 @@ export const documentRules = {
   },
 } as const satisfies Record<string, DocumentRule>;
 
+// キーは preset-ai-writing の rule id と一致させる。textlint 側のメッセージは
+// 「より自然な表現を検討してください」で終わり書き換え先を示さないため、good だけ
+// こちらで持つ。severity は語規則と違い全て warning から始める。構造の指摘は
+// 書式の好みと区別がつかず、severe にすると SKILL.md の編集が進まなくなる
+export const textlintRules = {
+  'no-ai-list-formatting': {
+    category: 'リストの書式',
+    severity: 'warning',
+    good: '絵文字を消して語で書く。例:「✅ 完了」→「完了」',
+  },
+  'no-ai-emphasis-patterns': {
+    category: '強調の書式',
+    severity: 'warning',
+    good: '見出しの ** を外す。強調は地の文の語にだけ使う',
+  },
+  'no-ai-hype-expressions': {
+    category: '誇張',
+    severity: 'warning',
+    good: '誇張語を消して事実だけ書く。程度を示すなら数値か比較対象を添える。例:「大幅に短縮」→「1.2 秒から 0.4 秒に短縮」',
+  },
+  'no-ai-colon-continuation': {
+    category: 'コロンの継続',
+    severity: 'warning',
+    good: 'コロンを消して文で言い切る。例:「実行します:」→「実行方法は次のとおりです。」。名詞で終わるコロン(「例:」「使用方法:」)は残してよい',
+  },
+  'ai-tech-writing-guideline': {
+    category: '冗長・曖昧',
+    severity: 'warning',
+    good: '冗長な言い回しを削り、能動態と具体的な数値で書く。例:「操作する必要があります」→「操作します」。「必要に応じて」「適切に」は削る',
+  },
+} as const satisfies Record<string, TextlintRule>;
+
 // 回数だけで判定すると長い文書ほど当たりやすい。密度が薄いうちは人間の修辞と
 // 区別がつかないため、地の文に対する比率も条件にする
 export const antithesisRatioThreshold = 0.02;
@@ -265,7 +303,8 @@ export const plainEndings = [
 
 export type WordRuleId = (typeof wordRules)[number]['id'];
 export type DocumentRuleId = keyof typeof documentRules;
-export type RuleId = WordRuleId | DocumentRuleId;
+export type TextlintRuleId = keyof typeof textlintRules;
+export type RuleId = WordRuleId | DocumentRuleId | TextlintRuleId;
 
 export interface Violation {
   ruleId: RuleId;
@@ -284,4 +323,14 @@ export function documentRule<Id extends DocumentRuleId>(
 
 export function isDocumentRuleId(id: RuleId): id is DocumentRuleId {
   return id in documentRules;
+}
+
+export function isTextlintRuleId(id: RuleId): id is TextlintRuleId {
+  return id in textlintRules;
+}
+
+// ファイル全体を見て判定する規則。今回書いた範囲に関係なく当たり続けるため、
+// 呼ぶ側は同じ指摘の再送を抑える
+export function isFileScopedRuleId(id: RuleId): boolean {
+  return isDocumentRuleId(id) || isTextlintRuleId(id);
 }

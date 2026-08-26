@@ -24,6 +24,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@textlint-ja/textlint-rule-preset-ai-writing": "^1.7.0",
     "cc-hooks-ts": "^2.1.238",
     "defuddle": "^0.19.3",
     "github-reserved-names": "^2.2.0",
@@ -39,6 +40,7 @@
     "pathe": "^2.0.3",
     "playwright": "^1.62.1",
     "shiki": "^4.4.3",
+    "textlint": "^15.8.0",
     "valibot": "^1.4.2"
   }
 }

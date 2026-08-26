@@ -1,7 +1,7 @@
 import { extname } from 'node:path';
 import { runStyleCheck, severeViolations } from './check.ts';
 import { formatReport, formatStopReport } from './report.ts';
-import { isDocumentRuleId, type Violation } from './rules.ts';
+import { isFileScopedRuleId, type Violation } from './rules.ts';
 import { toSentences } from './sanitize.ts';
 import {
   mergeEntry,
@@ -39,7 +39,9 @@ export interface StopInput {
 // 語レベルと違い文書レベルの判定はファイル全体を見るため、無関係な箇所を
 // 編集しても同じ指摘が当たり続ける。error は Stop hook で追うので対象外
 function suppressible(violation: Violation): boolean {
-  return violation.severity === 'warning' && isDocumentRuleId(violation.ruleId);
+  return (
+    violation.severity === 'warning' && isFileScopedRuleId(violation.ruleId)
+  );
 }
 
 // 件数を含む matched は文を足すたび変わる。対象文が変われば sentence も変わる
