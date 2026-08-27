@@ -8,6 +8,7 @@
     "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL": "1",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "CLAUDE_CODE_DISABLE_ARTIFACT": "1",
     "CLAUDE_AFK_TIMEOUT_MS": "86400000"
   },
   "permissions": {
@@ -64,6 +65,10 @@
           {
             "type": "command",
             "command": "bun run -i --silent ~/.claude/scripts/typescript/inject-comments.ts"
+          },
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/negation-guard.ts"
           }
         ]
       }
@@ -83,6 +88,15 @@
           {
             "type": "command",
             "command": "bun run -i --silent ~/.claude/scripts/typescript/style-check.ts"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/md-to-html.ts"
           }
         ]
       },
