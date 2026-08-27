@@ -45,6 +45,17 @@ const hitCases = {
   'jargon-skip': ['この手順を飛ばすと表示が壊れる。', '飛ばす'],
   'jargon-lottery': ['更新のたびに引き直すくじなので、いずれ引く。', 'くじ'],
   'jargon-burn': ['ループ1回で240秒を焼く。', '焼く'],
+  'jargon-authority': ['設定の正本はこのファイルである。', '正本'],
+  'jargon-contract': ['この関数の契約を決める。', '契約'],
+  'jargon-promise': ['この API は順序を約束する。', '約束'],
+  'jargon-wire': ['ハンドラを配線する。', '配線'],
+  'jargon-surface': ['この公開面を小さく保つ。', '公開面'],
+  'jargon-role': ['このプロセスが中継役になる。', '役'],
+  'jargon-run': ['テストを回す。', 'を回す'],
+  'jargon-skeleton': ['記事の骨を先に決める。', '骨'],
+  'jargon-noop': ['この分岐は no-op である。', 'no-op'],
+  'jargon-spec': ['まず spec を確認する。', 'spec'],
+  'jargon-ack': ['ack してから破棄する。', 'ack'],
 } as const satisfies Record<WordRuleId, readonly [string, string]>;
 
 const hitRows: [string, string, string][] = Object.entries(hitCases).map(
@@ -73,6 +84,22 @@ const missCases: [WordRuleId, string][] = [
   ['jargon-burn', '設定をイメージに焼き込む。'],
   ['jargon-burn', 'プロセスに焼き付いた環境変数が残る。'],
   ['jargon-burn', 'キャッシュに型が焼かれる。'],
+  ['jargon-contract', '雇用契約を確認する。'],
+  ['jargon-contract', '契約書に署名する。'],
+  ['jargon-promise', 'お約束の展開である。'],
+  ['jargon-promise', '口約束で終わった。'],
+  ['jargon-wire', '配線工事を依頼する。'],
+  ['jargon-surface', '画面を確認する。'],
+  ['jargon-surface', '断面積を計算する。'],
+  ['jargon-role', '主役を務める。'],
+  ['jargon-role', '役割を決める。'],
+  ['jargon-role', 'この資料は役に立つ。'],
+  ['jargon-run', '首を回して確認する。'],
+  ['jargon-run', '時計の針を回す。'],
+  ['jargon-skeleton', '骨折した箇所を確認する。'],
+  ['jargon-skeleton', '鉄骨を組む。'],
+  ['jargon-ack', 'callback を確認する。'],
+  ['jargon-spec', 'spec.ts を確認する。'],
 ];
 
 describe('語のルール', () => {

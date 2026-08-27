@@ -205,6 +205,89 @@ export const wordRules = [
       /(?<!(?:CD|DVD|BD|ROM|ディスク|イメージ|画像|写真|パン|肉|魚|芋) ?[をに] ?)焼(?:く|き(?![込付直上])|い[てた]|か(?![れ]))/u,
     good: '何をどれだけ消費するかをそのまま書く。例:「240 秒を消費する」「上限までトークンを使い切る」。記録媒体への書き込み、調理、日焼けは残してよい',
   },
+  {
+    id: 'jargon-authority',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /正本/u,
+    good: '値の出どころをそのまま書く。例:「この設定はここのファイルの値を使う」「食い違ったら settings.json を優先する」。法律文書の正本(謄本と対になるもの)は残してよい',
+  },
+  {
+    id: 'jargon-contract',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?<!雇用|賃貸|売買|保険|派遣|業務委託|請負)契約(?![書者社金期解満更条]|を結|を交)/u,
+    good: '入出力の取り決めをそのまま書く。例:「引数は文字列、戻り値は件数」「型定義が入出力の形を決めている」。人や会社と結ぶ契約は残してよい',
+  },
+  {
+    id: 'jargon-promise',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /(?<!口|固い|堅い|お)約束(?![事の])/u,
+    good: '保証する内容をそのまま書く。例:「受け取った順に処理する」「失敗しても件数は変わらない」。人と交わす約束は残してよい',
+  },
+  {
+    id: 'jargon-wire',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /配線(?!工)/u,
+    good: 'どれをどこへ渡すかをそのまま書く。例:「ハンドラを router に登録する」「生成した client を引数で渡す」。電気やネットワークの実物の配線は残してよい',
+  },
+  {
+    // surface の直訳。単独の「面」は場面・画面・側面と紛れるため、直訳で
+    // 現れる複合語だけを見る
+    id: 'jargon-surface',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?:公開|攻撃|接触|操作|設定|拡張|互換|境界|入出力)面(?![積白倒])/u,
+    good: '利用者から見える範囲をそのまま書く。例:「外部に出す関数は 2 つだけ」「利用者が触る設定項目」。物体の面や図形の面は残してよい',
+  },
+  {
+    id: 'jargon-role',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?<!主|脇|悪|大|端|配|重|現|兵|使|締|三|荷|通)役(?![割立所員場者職目柄種]|に立)/u,
+    good: '何をする処理かをそのまま書く。例:「Pod へ転送するプロセス」「名前から IP を引く仕組み」。演劇や配役の意味は残してよい',
+  },
+  {
+    id: 'jargon-run',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?<!手|首|体|腕|目|背|針|独楽|コマ|ハンドル|ネジ|ねじ|時計)を回[さしすせそ]/u,
+    good: '実行をそのまま書く。例:「テストを実行する」「CI で毎回動かす」。物を回転させる意味は残してよい',
+  },
+  {
+    id: 'jargon-skeleton',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /(?<!鉄|背|軟|遺|納|気|反|老|尾)骨(?![折盤髄粗質密子太])/u,
+    good: '構成をそのまま書く。例:「記事の見出しを先に決める」「最初に置く 3 つの節」。人体や動物の骨は残してよい',
+  },
+  {
+    id: 'jargon-noop',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /\bno[-\s]?ops?\b/iu,
+    good: '何が起きないかをそのまま書く。例:「この分岐では何もしない」「既に登録済みなら書き換えない」',
+  },
+  {
+    id: 'jargon-spec',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /\bspecs?\b/iu,
+    good: '仕様と書く。どの仕様かまで示す。例:「issue #386 で決めた仕様」「OpenAPI の定義ファイル」',
+  },
+  {
+    id: 'jargon-ack',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /\back\b/iu,
+    good: '受信確認の動作をそのまま書く。例:「受け取ったことを返してから捨てる」。通信仕様の ACK パケットを指す場合は大文字で書けば残してよい',
+  },
 ] as const satisfies readonly WordRule[];
 
 export const documentRules = {
