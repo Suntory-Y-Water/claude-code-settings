@@ -128,6 +128,15 @@
             "command": "bun run -i --silent ~/.claude/scripts/typescript/notify-input-needed.ts"
           }
         ]
+      },
+      {
+        "matcher": "WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/web-fetch-advice.ts"
+          }
+        ]
       }
     ],
     "PermissionRequest": [

@@ -85,8 +85,8 @@ web-fetch/
 
 style-check/
 
-# mikke index (再生成可能)
 .mikke/
 
-# subagent-log のバックアップ (環境固有)
 backups/*.tar.gz
+
+settings.temp.json
