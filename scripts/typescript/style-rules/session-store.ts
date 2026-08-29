@@ -23,6 +23,11 @@ export interface WarningStore {
   write(sessionId: string, entries: WarningEntry[]): Promise<void>;
 }
 
+export interface ReportedStore {
+  read(sessionId: string): Promise<string[]>;
+  write(sessionId: string, keys: string[]): Promise<void>;
+}
+
 const MAX_SENTENCES_PER_FILE = 20;
 const PRUNE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -90,13 +95,18 @@ export function createWarningStore(root: string): WarningStore {
   return createJsonStore<WarningEntry>(root, '.warnings.json');
 }
 
+export function createReportedStore(root: string): ReportedStore {
+  return createJsonStore<string>(root, '.conversation.json');
+}
+
 // プロセスを起動するテストから保存先を差し替えるために環境変数を見る
-const storeRoot =
+export const storeRoot =
   process.env.STYLE_CHECK_STORE_ROOT ??
   join(homedir(), '.claude', 'style-check');
 
 export const sessionStore = createSessionStore(storeRoot);
 export const warningStore = createWarningStore(storeRoot);
+export const reportedStore = createReportedStore(storeRoot);
 
 export function mergeEntry(
   entries: StoredEntry[],
