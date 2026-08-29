@@ -1,29 +1,7 @@
-# RTK - Rust Token Killer
+# RTK
 
-**Usage**: Token-optimized CLI proxy (60-90% savings on dev operations)
+出力を絞って返す CLI プロキシ。パイプのないコマンドはフックが `rtk <cmd>` へ自動で書き換える。
 
-## Meta Commands (always use rtk directly)
-
-```bash
-rtk gain              # Show token savings analytics
-rtk gain --history    # Show command usage history with savings
-rtk discover          # Analyze Claude Code history for missed opportunities
-rtk proxy <cmd>       # Execute raw command without filtering (for debugging)
-```
-
-## Installation Verification
-
-```bash
-rtk --version         # Should show: rtk X.Y.Z
-rtk gain              # Should work (not "command not found")
-which rtk             # Verify correct binary
-```
-
-⚠️ **Name collision**: If `rtk gain` fails, you may have reachingforthejack/rtk (Rust Type Kit) installed instead.
-
-## Hook-Based Usage
-
-All other commands are automatically rewritten by the Claude Code hook.
-Example: `git status` → `rtk git status` (transparent, 0 tokens overhead)
-
-Refer to CLAUDE.md for full command reference.
+- Bash は 1 回につき 1 コマンドだけ書き、出力の絞り込みは rtk に任せる
+- パイプが必要なときは自分で `rtk` を前置する: `rtk grep -rn foo . | head`
+- `rtk git log` は `--no-merges` を自動で付けるため、マージコミットが結果に出ない。マージを確認するときは素の `git log` を使う
