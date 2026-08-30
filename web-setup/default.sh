@@ -12,6 +12,11 @@ set -u
   mkdir -p "$HOME/.claude"
   cp -a /tmp/cc-settings/. "$HOME/.claude/"
   cd "$HOME/.claude" && bun install
+
+  claude plugin marketplace add Suntory-N-Water/suntory-n-water-marketplace || true
+  claude plugin marketplace add anthropics/claude-plugins-official || true
+  claude plugin install -y general-dev-skills@suntory-n-water-marketplace || true
+  claude plugin install -y mattpocock-skills@claude-plugins-official || true
 ) &
 
 wait
