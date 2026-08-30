@@ -64,7 +64,7 @@ export const wordRules = [
     category: '記号',
     severity: 'severe',
     pattern: /[—―─]/u,
-    good: '同格・補足の挿入は括弧()にする。言い換えは句点で二文に分けるか読点でつなぐ。見出しは単一の自然な句にする',
+    good: '言い換えは句点で二文に分けるか読点でつなぐ。見出しは単一の自然な句にする',
   },
   {
     id: 'kikimasu',
@@ -288,6 +288,133 @@ export const wordRules = [
     pattern: /\back\b/iu,
     good: '受信確認の動作をそのまま書く。例:「受け取ったことを返してから捨てる」。通信仕様の ACK パケットを指す場合は大文字で書けば残してよい',
   },
+  {
+    id: 'jargon-fold',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?<!折り|店を|会社を|事業を|商売を|傘を|布団を|服を|洗濯物を|地図を|テントを)(?:畳|たた)(?:む|ん[でだ]|み(?!込)|め[るばよ]?|もう)/u,
+    good: '削除・統合・終了のどれをするかをそのまま書く。例:「テストファイルを削除して 4 ケースを統合先へ移す」「この機能の提供をやめる」。布や紙を折り重ねる意味と、店や事業をやめる意味は残してよい',
+  },
+  {
+    id: 'jargon-lick',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?<!(?:飴|アイス|指|唇|皿|傷|塩|切手|スプーン|舌|犬|猫) ?[をがで] ?)(?:舐め|嘗め)(?:る|た|て|ま[すしせ]|れ[ばる]?)/u,
+    good: '何をどの範囲まで読むかをそのまま書く。例:「DOM を端から順に見る」「全ファイルを 1 回読む」。実際に舌でなめる意味は残してよい',
+  },
+  {
+    id: 'jargon-stock',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern: /在庫(?![管切])/u,
+    good: '数えている対象と数をそのまま書く。例:「公開時点で 100 ページある」「最初に用意できるのは 75 件」。商品や部品の実際の在庫は残してよい',
+  },
+  // ここから下は skill stop-ai-slop-jp と natural-japanese が挙げる語のうち、
+  // このユーザーの過去入力 10,499 件で 1 度も使われていなかったものだけを採る。
+  // 出典側が挙げていても実測で使用があった語(解像度・温度感・凝縮・インストール・
+  // リファクタリング・コミットする)は、本人の語彙と区別できないため入れていない。
+  // 同じ理由で全角コロン後の半角スペース・curly quotes・絵文字全般も対象外。
+  {
+    id: 'ai-texture',
+    category: '質感を装う語',
+    severity: 'severe',
+    pattern:
+      /手触り|肌感|(?<!総|発|摂取)熱量|腹落ち|血の通った|地に足のついた|等身大|泥臭|(?:の|という)営み/u,
+    good: '何を見て何を感じたかをそのまま書く。例:「押した時の反発が強い」「実際に触ると angular より重い」',
+  },
+  {
+    id: 'ai-grandiose',
+    category: '大げさな熟語',
+    severity: 'severe',
+    pattern: /真理|境地|虚飾|深淵|禁欲的|冷徹|美学|結晶(?![化構水析])/u,
+    good: '普通の感想を普通の語で書く。例:「使いにくかった」「思ったより速い」',
+  },
+  {
+    id: 'translationese-verb',
+    category: '翻訳調の動詞',
+    severity: 'severe',
+    pattern:
+      /示唆|物語っている|(?<!水面に|空に|海面に)浮かび上が|収斂|同じ方向を指し/u,
+    good: '誰が何をしたかを書く。例:「この計測では 3 件が失敗した」「同じ設定で 2 回とも落ちた」',
+  },
+  {
+    id: 'translationese-frame',
+    category: '翻訳調の言い回し',
+    severity: 'severe',
+    pattern: /という点で|であることは間違いない/u,
+    good: '助詞でそのまま書く。例:「速度は速い」「この設定では落ちない」',
+  },
+  {
+    id: 'katakana-jargon',
+    category: '横文字',
+    severity: 'severe',
+    pattern:
+      /レバレッジ|ディープダイブ|アライン(?![メ])|ピボット(?!テーブル)|ナレッジ(?!共有|ベース|マネジメント)|プライオリティ/u,
+    good: '普通の日本語で書く。例:「活用する」「詳しく調べる」「揃える」「方針を変える」「知識」「優先度」',
+  },
+  {
+    id: 'cliche-closing',
+    category: '決まり文句',
+    severity: 'severe',
+    pattern:
+      /いかがでした|ぜひ.{0,12}してみてください|現代社会において|近年[、，]|結論から言うと/u,
+    good: '前置きと締めを削り、結果だけ書く。例:「設定を 2 箇所変えた」',
+  },
+  {
+    id: 'structure-preview',
+    category: '構成の予告',
+    severity: 'severe',
+    pattern: /つの観点から|順に見てい|ここからが本題|改めて整理|STEP ?[0-9]/u,
+    good: '予告を削って中身から書く。見出しで分かることを本文で言い直さない',
+  },
+  {
+    id: 'conclusion-dodge',
+    category: '結論の回避',
+    severity: 'severe',
+    pattern:
+      /ケースバイケース|場合によります|一概には言え|メリットもあれば|賛否が分かれる|状況に応じて異な/u,
+    good: 'どちらを選ぶかを書く。例:「この規模なら前者にする」。決められないなら何が分かれば決まるかを書く',
+  },
+  {
+    id: 'weak-negation',
+    category: '弱い否定',
+    severity: 'severe',
+    pattern: /あまり推奨され|望ましくないとされ|避けたほうが(?:良|よ)い/u,
+    good: '言い切る。例:「これは使わない」「この書き方だと落ちる」',
+  },
+  {
+    id: 'disclaimer-ritual',
+    category: '言い訳',
+    severity: 'severe',
+    pattern:
+      /あくまで一例|個人差があ|(?:すべて|全て).{0,10}当てはまるわけでは/u,
+    good: '予防線を削る。条件があるなら条件をそのまま書く。例:「bun 1.4 で確認した」',
+  },
+  {
+    id: 'academic-self',
+    category: '自称',
+    severity: 'severe',
+    pattern: /本稿|本論考|筆者/u,
+    good: '自分を指すなら「私」と書く。文書自体を指すなら「ここ」「この文書」と書く',
+  },
+  {
+    // 貼り付けや変換で紛れ込む見えない文字。人間が意図して書くことはない。
+    // ZWJ(U+200D)は絵文字の合成に使われるため対象から外す
+    id: 'invisible-char',
+    category: '見えない文字',
+    severity: 'severe',
+    pattern: /[\u200B\u200C\uFEFF\u2060]/u,
+    good: '見えない空白文字を削除する',
+  },
+  {
+    id: 'check-cross-mark',
+    category: '記号での対比',
+    severity: 'severe',
+    pattern: /[❌✅]/u,
+    good: '対比を地の文に展開する。例:「前のやり方はここが面倒で、今のやり方はここが楽になった」',
+  },
 ] as const satisfies readonly WordRule[];
 
 export const documentRules = {
@@ -317,6 +444,14 @@ export const documentRules = {
     severity: 'warning',
     threshold: 1,
     good: '述語で言い切る。例:「〜が原因。」→「〜が原因です。」',
+  },
+  // 見出しに主張を置くと、各節がその主張の裏付けを並べる構成になる。
+  // ファイル全体を見る規則なので severe にすると無関係な編集のたびに再送される
+  'heading-proposition': {
+    category: '見出しの形',
+    severity: 'warning',
+    threshold: 1,
+    good: '見出しは題目の名前にする。例:「この設計もまた同じ方向を指している」→「この設計の位置づけ」',
   },
 } as const satisfies Record<string, DocumentRule>;
 

@@ -56,6 +56,22 @@ const hitCases = {
   'jargon-noop': ['この分岐は no-op である。', 'no-op'],
   'jargon-spec': ['まず spec を確認する。', 'spec'],
   'jargon-ack': ['ack してから破棄する。', 'ack'],
+  'jargon-fold': ['このテストファイルを畳む。', '畳む'],
+  'jargon-lick': ['DOM を 1 回舐めるだけである。', '舐める'],
+  'jargon-stock': ['初期在庫は 75 件になる。', '在庫'],
+  'ai-texture': ['この設計には手触りがある。', '手触り'],
+  'ai-grandiose': ['そこには残酷な真理がある。', '真理'],
+  'translationese-verb': ['この結果は限界を示唆する。', '示唆'],
+  'translationese-frame': ['この方式は速度という点で優れている。', 'という点で'],
+  'katakana-jargon': ['既存の資産にレバレッジをかける。', 'レバレッジ'],
+  'cliche-closing': ['いかがでしたか。', 'いかがでした'],
+  'structure-preview': ['3 つの観点から説明する。', 'つの観点から'],
+  'conclusion-dodge': ['この判断はケースバイケースである。', 'ケースバイケース'],
+  'weak-negation': ['この書き方はあまり推奨されない。', 'あまり推奨され'],
+  'disclaimer-ritual': ['これはあくまで一例である。', 'あくまで一例'],
+  'academic-self': ['本稿では設定を扱う。', '本稿'],
+  'invisible-char': ['設定を\u200B読み込む。', '\u200B'],
+  'check-cross-mark': ['❌ 古い書き方を使う。', '❌'],
 } as const satisfies Record<WordRuleId, readonly [string, string]>;
 
 const hitRows: [string, string, string][] = Object.entries(hitCases).map(
@@ -100,6 +116,18 @@ const missCases: [WordRuleId, string][] = [
   ['jargon-skeleton', '鉄骨を組む。'],
   ['jargon-ack', 'callback を確認する。'],
   ['jargon-spec', 'spec.ts を確認する。'],
+  ['jargon-fold', '折り畳み可能なパネルを置く。'],
+  ['jargon-fold', '畳み込みニューラルネットワークを使う。'],
+  ['jargon-fold', '赤字が続いたので店を畳む。'],
+  ['jargon-lick', '子どもが飴を舐めている。'],
+  ['jargon-stock', '在庫管理システムを更新する。'],
+  ['jargon-stock', '部品が在庫切れになった。'],
+  ['ai-texture', '一日の総熱量を計算する。'],
+  ['ai-grandiose', '結晶化した粒子を観察する。'],
+  ['katakana-jargon', 'ピボットテーブルを作る。'],
+  ['katakana-jargon', 'ナレッジ共有の場を作る。'],
+  ['cliche-closing', '結局のところ書きたい人が書く。'],
+  ['translationese-verb', '浮き輪が水面に浮かび上がる。'],
 ];
 
 describe('語のルール', () => {
@@ -480,6 +508,48 @@ describe('重大度', () => {
     ].join('\n');
 
     const severe = severeViolations(await check(source));
+
+    expect(severe).toEqual([]);
+  });
+});
+
+describe('見出しの形', () => {
+  test('見出しが述語で言い切る時、該当見出しが示されること', async () => {
+    const violations = await check('# この設計もまた同じ方向を指している');
+
+    const hit = ofRule(violations, 'heading-proposition')[0];
+    expect(hit?.sentence).toBe('この設計もまた同じ方向を指している');
+    expect(hit?.matched).toContain('1 件');
+  });
+
+  test('見出しが疑問で終わる時、該当見出しが示されること', async () => {
+    const violations = await check('# なぜこの方式を選んだのか');
+
+    expect(ofRule(violations, 'heading-proposition')[0]?.sentence).toBe(
+      'なぜこの方式を選んだのか',
+    );
+  });
+
+  test('見出しが名詞で終わる時、指摘されないこと', async () => {
+    const violations = await check('# フックの設計');
+
+    expect(ofRule(violations, 'heading-proposition')).toEqual([]);
+  });
+
+  test('手順を表す見出しが動詞で終わる時、指摘されないこと', async () => {
+    const violations = await check('# 依存をインストールする');
+
+    expect(ofRule(violations, 'heading-proposition')).toEqual([]);
+  });
+
+  test('地の文が述語で終わっても、見出しの指摘には数えないこと', async () => {
+    const violations = await check('この設計は同じ方向を指している。');
+
+    expect(ofRule(violations, 'heading-proposition')).toEqual([]);
+  });
+
+  test('見出しの指摘は重大にならないこと', async () => {
+    const severe = severeViolations(await check('# この方式が最も速い'));
 
     expect(severe).toEqual([]);
   });

@@ -22,6 +22,10 @@ function endingOf(
   return endings.find((ending) => trimmed.endsWith(ending));
 }
 
+function headingSentences(sentences: Sentence[]): Sentence[] {
+  return sentences.filter((sentence) => sentence.kind === 'heading');
+}
+
 function proseSentences(sentences: Sentence[]): Sentence[] {
   return sentences.filter(
     (sentence) => sentence.kind === 'prose' && /[。]$/.test(sentence.text),
@@ -160,14 +164,54 @@ async function checkTaigendome(prose: Sentence[]): Promise<Violation[]> {
   ];
 }
 
+// 見出しの末尾が名詞なら題目、述語なら主張とみなす。ただし「〜する」のような
+// 自立動詞で終わる見出しは手順書として自然なので対象から外す
+const PREDICATE_HEAD_POS = new Set(['助動詞', '形容詞', '助詞']);
+
+async function checkHeadingProposition(
+  headings: Sentence[],
+): Promise<Violation[]> {
+  const rule = documentRule('heading-proposition');
+  if (headings.length === 0) {
+    return [];
+  }
+  const tokenizer = await loadTokenizer();
+  const hits = headings.filter((sentence) => {
+    const last = tokenizer.tokenize(body(sentence.text)).at(-1);
+    if (last === undefined) {
+      return false;
+    }
+    return (
+      PREDICATE_HEAD_POS.has(last.pos) ||
+      (last.pos === '動詞' && last.pos_detail_1 === '非自立')
+    );
+  });
+  if (hits.length < rule.threshold) {
+    return [];
+  }
+  return hits.slice(0, MAX_EXAMPLES).map((sentence) => ({
+    ruleId: rule.id,
+    category: rule.category,
+    severity: rule.severity,
+    matched: `主張になっている見出しが ${hits.length} 件`,
+    sentence: sentence.text,
+    good: rule.good,
+  }));
+}
+
 export async function checkDocument(
   sentences: Sentence[],
 ): Promise<Violation[]> {
   const prose = proseSentences(sentences);
+  const [taigendome, heading] = await Promise.all([
+    checkTaigendome(prose),
+    checkHeadingProposition(headingSentences(sentences)),
+  ]);
   return [
     ...checkEndingRepeat(prose),
     ...checkStyleMix(prose),
     ...checkDewanaku(prose),
-    ...(await checkTaigendome(prose)),
+    ...taigendome,
+    ...heading,
   ];
 }
