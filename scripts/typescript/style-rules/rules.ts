@@ -415,6 +415,15 @@ export const wordRules = [
     pattern: /[❌✅]/u,
     good: '対比を地の文に展開する。例:「前のやり方はここが面倒で、今のやり方はここが楽になった」',
   },
+  {
+    // くじ引きの比喩。対象を絞らないと「線を引く」「辞書を引く」「風邪を引く」まで当たる
+    id: 'jargon-draw',
+    category: '過去の指摘',
+    severity: 'warning',
+    pattern:
+      /(?:レシピ|記事|投稿|項目|候補|データ|\d+ ?件)(?:を|だけ|も)引(?:く|き|け[るばよ]?|い[てた]|こう)/u,
+    good: '「引く」を使わず、選ぶ・表示する・取り出すのどれをするかをそのまま書く。例:「全レシピから1件だけ選ぶ」「ランダムに1件表示する」。くじや線や辞書を実際に引く意味は残してよい',
+  },
 ] as const satisfies readonly WordRule[];
 
 export const documentRules = {
