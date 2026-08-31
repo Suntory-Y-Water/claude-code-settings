@@ -59,13 +59,13 @@ export const wordRules = [
     pattern: /正面から(?:扱う|回収する|見る|書く|立てる)/u,
     good: '姿勢の宣言を削り、動作だけ書く。例:「本章では〇〇の理論を扱う」「ここで、この前提を回収する」',
   },
-  {
-    id: 'dash',
-    category: '記号',
-    severity: 'severe',
-    pattern: /[—―─]/u,
-    good: '言い換えは句点で二文に分けるか読点でつなぐ。見出しは単一の自然な句にする',
-  },
+  // {
+  //   id: 'dash',
+  //   category: '記号',
+  //   severity: 'severe',
+  //   pattern: /[—―─]/u,
+  //   good: '言い換えは句点で二文に分けるか読点でつなぐ。見出しは単一の自然な句にする',
+  // },
   {
     id: 'kikimasu',
     category: '比喩の動詞',
