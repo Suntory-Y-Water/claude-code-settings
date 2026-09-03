@@ -6,10 +6,23 @@
     "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
     "CLAUDE_CODE_NEW_INIT": "1",
     "CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL": "1",
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1",
     "ENABLE_CLAUDEAI_MCP_SERVERS": "false",
+    "CLAUDE_CODE_AUTO_CONNECT_IDE": "false",
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "CLAUDE_CODE_DISABLE_ARTIFACT": "1",
-    "CLAUDE_AFK_TIMEOUT_MS": "86400000"
+    "CLAUDE_AFK_TIMEOUT_MS": "86400000",
+    "DISABLE_COST_WARNINGS": "1",
+    "CLAUDE_CODE_DISABLE_CFC_PROMPT": "1",
+    "CLAUDE_CODE_DISABLE_CRON": "1",
+    "CLAUDE_CODE_DISABLE_ADVISOR_TOOL": "1",
+    "CLAUDE_CODE_GLOB_NO_IGNORE": "false",
+    "CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS": "3600000",
+    "DISABLE_BUG_COMMAND": "1",
+    "DISABLE_DOCTOR_COMMAND": "1",
+    "DISABLE_UPGRADE_COMMAND": "1",
+    "DISABLE_EXTRA_USAGE_COMMAND": "1",
+    "DISABLE_INSTALL_GITHUB_APP_COMMAND": "1"
   },
   "permissions": {
     "deny": [
@@ -229,9 +242,15 @@
   "language": "日本語",
   "spinnerTipsEnabled": false,
   "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    }
+  },
   "awaySummaryEnabled": false,
   "showClearContextOnPlanAccept": true,
   "plansDirectory": ".claude/plans",
+  "tui": "fullscreen",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
@@ -246,9 +265,17 @@
     ]
   },
   "leftArrowOpensAgents": false,
-  "modelSettings": {
-    "claude-opus-5": {
-      "effortLevel": "medium"
-    }
-  }
+  "feedbackDrafts": "off",
+  "attribution": {
+    "sessionUrl": false
+  },
+  "promptSuggestionEnabled": false,
+  "emojiCompletionEnabled": false,
+  "feedbackSurveyRate": 0,
+  "showTurnDuration": false,
+  "timeFormat": "24-hour",
+  "promptCacheTtl": "1h",
+  "subagentPromptCacheTtl": "1h",
+  "switchModelsOnFlag": false,
+  "timeZone": "Asia/Tokyo"
 }
