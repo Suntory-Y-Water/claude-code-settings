@@ -91,3 +91,5 @@ backups/*.tar.gz
 
 settings.temp.json
 image-cache/
+
+feedback/

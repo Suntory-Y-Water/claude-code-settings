@@ -120,6 +120,8 @@ const missCases: [WordRuleId, string][] = [
   ['jargon-fold', '折り畳み可能なパネルを置く。'],
   ['jargon-fold', '畳み込みニューラルネットワークを使う。'],
   ['jargon-fold', '赤字が続いたので店を畳む。'],
+  ['jargon-fold', '洗い終わった洗濯物を畳む。'],
+  ['jargon-fold', '受け取った地図を畳む。'],
   ['jargon-lick', '子どもが飴を舐めている。'],
   ['jargon-stock', '在庫管理システムを更新する。'],
   ['jargon-stock', '部品が在庫切れになった。'],
@@ -186,6 +188,15 @@ describe('語のルール', () => {
       sentence: '型定義は核心的である。',
     });
     expect(violations[0]?.good).not.toBe('');
+  });
+
+  test('畳むを書いた時、severe として報告されること', async () => {
+    const violations = await check('再生成を完了条件に畳んだ。');
+
+    expect(violations[0]).toMatchObject({
+      severity: 'severe',
+      matched: '畳んだ',
+    });
   });
 
   test('同じ severe が 3 文に当たる時、打ち切らずに全て報告すること', async () => {
