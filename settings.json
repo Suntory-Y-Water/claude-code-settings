@@ -22,7 +22,11 @@
     "DISABLE_DOCTOR_COMMAND": "1",
     "DISABLE_UPGRADE_COMMAND": "1",
     "DISABLE_EXTRA_USAGE_COMMAND": "1",
-    "DISABLE_INSTALL_GITHUB_APP_COMMAND": "1"
+    "DISABLE_INSTALL_GITHUB_APP_COMMAND": "1",
+    "CLAUDE_CODE_THRIFTY_SONIC": "false"
+  },
+  "attribution": {
+    "sessionUrl": false
   },
   "permissions": {
     "deny": [
@@ -70,11 +74,24 @@
             "command": "bun run -i --silent ~/.claude/scripts/typescript/opus5-rule-inject.ts"
           }
         ]
+      },
+      {
+        "matcher": "clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/cache-ttl-guard.ts"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/cache-ttl-guard.ts"
+          },
           {
             "type": "command",
             "command": "bun run -i --silent ~/.claude/scripts/typescript/inject-comments.ts"
@@ -197,6 +214,14 @@
             "async": true
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bun run -i --silent ~/.claude/scripts/typescript/cache-ttl-guard.ts"
+          }
+        ]
       }
     ],
     "SubagentStart": [
@@ -240,21 +265,34 @@
   },
   "outputStyle": "Concise",
   "language": "日本語",
+  "feedbackSurveyRate": 0,
+  "feedbackDrafts": "off",
   "spinnerTipsEnabled": false,
+  "promptCacheTtl": "1h",
+  "subagentPromptCacheTtl": "1h",
   "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5": {
+      "effortLevel": "high"
+    },
+    "claude-fable-5-1": {
       "effortLevel": "medium"
     }
   },
+  "promptSuggestionEnabled": false,
+  "emojiCompletionEnabled": false,
   "awaySummaryEnabled": false,
   "showClearContextOnPlanAccept": true,
   "plansDirectory": ".claude/plans",
   "tui": "fullscreen",
+  "timeFormat": "24-hour",
+  "timeZone": "Asia/Tokyo",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
   "autoCompactEnabled": true,
+  "switchModelsOnFlag": false,
+  "showTurnDuration": false,
   "remoteControlAtStartup": false,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
@@ -264,18 +302,5 @@
       "$defaults"
     ]
   },
-  "leftArrowOpensAgents": false,
-  "feedbackDrafts": "off",
-  "attribution": {
-    "sessionUrl": false
-  },
-  "promptSuggestionEnabled": false,
-  "emojiCompletionEnabled": false,
-  "feedbackSurveyRate": 0,
-  "showTurnDuration": false,
-  "timeFormat": "24-hour",
-  "promptCacheTtl": "1h",
-  "subagentPromptCacheTtl": "1h",
-  "switchModelsOnFlag": false,
-  "timeZone": "Asia/Tokyo"
+  "leftArrowOpensAgents": false
 }
