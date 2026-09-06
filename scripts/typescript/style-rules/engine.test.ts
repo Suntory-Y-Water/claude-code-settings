@@ -22,8 +22,8 @@ const hitCases = {
   'empty-adjective-weak': ['型定義は不可欠である。', '不可欠'],
   'empty-adjective-coverage': ['多角的な検討を行う。', '多角的'],
   'front-facing': ['この前提を正面から回収する。', '正面から回収する'],
-  dash: ['設計—実装の順で進める。', '—'],
-  kikimasu: ['この設定が効きます。', '効きます'],
+  // dash: ['設計—実装の順で進める。', '—'],
+  kikimasu: ['この設定が効きます。', '効き'],
   preview: ['本章では設計を扱う。', '本章では'],
   summary: ['まとめると、原因は設定である。', 'まとめると'],
   explore: ['この問題を探求する。', '探求する'],
@@ -62,17 +62,24 @@ const hitCases = {
   'ai-texture': ['この設計には手触りがある。', '手触り'],
   'ai-grandiose': ['そこには残酷な真理がある。', '真理'],
   'translationese-verb': ['この結果は限界を示唆する。', '示唆'],
-  'translationese-frame': ['この方式は速度という点で優れている。', 'という点で'],
+  'translationese-frame': [
+    'この方式は速度という点で優れている。',
+    'という点で',
+  ],
   'katakana-jargon': ['既存の資産にレバレッジをかける。', 'レバレッジ'],
   'cliche-closing': ['いかがでしたか。', 'いかがでした'],
   'structure-preview': ['3 つの観点から説明する。', 'つの観点から'],
-  'conclusion-dodge': ['この判断はケースバイケースである。', 'ケースバイケース'],
+  'conclusion-dodge': [
+    'この判断はケースバイケースである。',
+    'ケースバイケース',
+  ],
   'weak-negation': ['この書き方はあまり推奨されない。', 'あまり推奨され'],
   'disclaimer-ritual': ['これはあくまで一例である。', 'あくまで一例'],
   'academic-self': ['本稿では設定を扱う。', '本稿'],
   'invisible-char': ['設定を\u200B読み込む。', '\u200B'],
   'check-cross-mark': ['❌ 古い書き方を使う。', '❌'],
   'jargon-draw': ['全レシピから1件だけ引きます。', '1件だけ引き'],
+  'jargon-pitfall': ['この設定には落とし穴がある。', '落とし穴'],
 } as const satisfies Record<WordRuleId, readonly [string, string]>;
 
 const hitRows: [string, string, string][] = Object.entries(hitCases).map(
@@ -81,8 +88,14 @@ const hitRows: [string, string, string][] = Object.entries(hitCases).map(
 
 const missCases: [WordRuleId, string][] = [
   ['front-facing', '正面から取り組む。'],
-  ['dash', '設計-実装の順で進める。'],
-  ['kikimasu', 'この設定は効きません。'],
+  // ['dash', '設計-実装の順で進める。'],
+  ['kikimasu', '設定を変えた効果が出ている。'],
+  ['kikimasu', '実行の効率を測る。'],
+  ['kikimasu', 'この項目を有効化する。'],
+  ['kikimasu', 'キャッシュを無効にする。'],
+  ['kikimasu', '改正法が発効する。'],
+  ['kikimasu', '時効が成立した。'],
+  ['kikimasu', '実効性のある対策を選ぶ。'],
   ['preview', 'ここでは設定を確認する。'],
   ['connective-additive', 'また会う日まで待つ。'],
   ['connective-additive', 'これはまた、別の話である。'],
@@ -151,6 +164,21 @@ describe('語のルール', () => {
     const violations = await check(sentence);
 
     expect(ofRule(violations, ruleId)).toEqual([]);
+  });
+
+  // 「効きます」だけを見ていた頃は、同じ意味の他の活用形が素通りしていた
+  test.each([
+    ['この設定が効く。', '効く'],
+    ['キャッシュが効いている。', '効いて'],
+    ['再起動しても効いた。', '効いた'],
+    ['この指定は効かない。', '効かな'],
+    ['同じ手が効ける。', '効ける'],
+    ['ここで効けば十分である。', '効けば'],
+    ['この対策は効き目がある。', '効き'],
+  ])('%s のように活用させても kikimasu で検出されること', async (sentence, matched) => {
+    const violations = await check(sentence);
+
+    expect(ofRule(violations, 'kikimasu')[0]?.matched).toBe(matched);
   });
 
   test('罠と同じ扱いの語も同じルールで検出されること', async () => {

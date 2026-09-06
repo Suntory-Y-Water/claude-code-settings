@@ -22,9 +22,10 @@ export interface ConversationInput {
 
 const MAX_SHOWN = 5;
 // 画面では ANSI がそのまま文字として出るため、色は使えない。記号で見分ける
+// 直前の返答を書き直させると同じ内容が二度出て文脈を圧迫する。以降の言い換えだけを求める
 const REWRITE_INSTRUCTION = [
-  '🛑 style-check: 直前の返答に検出語があります。同じ内容のまま該当文を書き直し、',
-  '書き直した返答だけをもう一度出してください。検出語だけの同義語置換は禁止。',
+  '🛑 style-check: 直前の返答に検出語があります。直前の返答はそのままにして、',
+  'これ以降の返答で該当語を言い換えてください。検出語だけの同義語置換は禁止。',
 ].join('');
 // 会話は 1 ターンごとに終わるが、記録は差し戻しで同じターンが再検査されても
 // 同じ指摘を繰り返さないために残す
@@ -58,7 +59,7 @@ export function formatConversationReport(violations: Violation[]): string {
   }
   const omitted = grouped.size - shown.length;
   if (omitted > 0) {
-    lines.push('', `ほか ${omitted} 文も同じように直す。`);
+    lines.push('', `ほか ${omitted} 文の検出語も同じように言い換える。`);
   }
   return lines.join('\n');
 }

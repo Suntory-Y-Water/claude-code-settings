@@ -83,12 +83,11 @@ test('検出語が無い時、何も報告せず記録もしないこと', async
   expect(await logRecords()).toEqual([]);
 });
 
-test('error の検出語がある時、書き直しを求め、記録にも残すこと', async () => {
+test('error の検出語がある時、該当文を差し戻し、記録にも残すこと', async () => {
   const path = await transcript(SEVERE);
 
   const message = await check(path);
 
-  expect(message).toContain('書き直');
   expect(message).toContain(SEVERE);
   expect(message).toContain('核心的:');
   expect(await logRecords()).toEqual([
