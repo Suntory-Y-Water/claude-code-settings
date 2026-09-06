@@ -94,3 +94,5 @@ image-cache/
 
 feedback/
 .ponytail-active
+
+cache-ttl/
