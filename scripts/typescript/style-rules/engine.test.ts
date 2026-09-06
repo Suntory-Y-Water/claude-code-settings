@@ -80,6 +80,7 @@ const hitCases = {
   'check-cross-mark': ['❌ 古い書き方を使う。', '❌'],
   'jargon-draw': ['全レシピから1件だけ引きます。', '1件だけ引き'],
   'jargon-pitfall': ['この設定には落とし穴がある。', '落とし穴'],
+  'jargon-block-off': ['これで両方の不具合を塞ぐ。', '塞ぐ'],
 } as const satisfies Record<WordRuleId, readonly [string, string]>;
 
 const hitRows: [string, string, string][] = Object.entries(hitCases).map(
@@ -141,6 +142,10 @@ const missCases: [WordRuleId, string][] = [
   ['jargon-draw', 'おみくじを引く。'],
   ['jargon-draw', '辞書を引いて確認する。'],
   ['jargon-draw', '定規で線を引く。'],
+  ['jargon-block-off', '耳を塞いで音を遮る。'],
+  ['jargon-block-off', '壁の穴を塞ぐ。'],
+  ['jargon-block-off', '今は手が塞がっている。'],
+  ['jargon-block-off', '腸閉塞の症例を調べる。'],
   ['ai-texture', '一日の総熱量を計算する。'],
   ['ai-grandiose', '結晶化した粒子を観察する。'],
   ['katakana-jargon', 'ピボットテーブルを作る。'],
